@@ -6753,8 +6753,8 @@
 			player=new Object()
 			player.settings=saveSettings
 			setPlayer()
-			setExplore()
-			setFight()
+			localStorage.removeItem("FLORROOMexplore")
+			localStorage.removeItem("FLORROOMfight")
 			userVersion=version
 			localStorage.setItem("FLORROOMuserVersion",JSON.stringify(userVersion))
 			document.getElementById("end2").innerText="The story of the Florroom continues..."
