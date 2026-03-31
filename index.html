@@ -3,11 +3,12 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1.0">
-	<title>Play Florroom!</title>
+	<title>Play 🍀!</title>
 	<link id="cute6361omg" rel="icon" href="data:image/svg+xml,
 		<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-			<path d='M0 0L100 0L100 100L0 100Z' style='stroke: none; fill: %23ffff7f'/>
-			<path d='M18 66A40 40 0 0 0 82 66M30 18L30 50M70 18L70 50' style='stroke: %23000000; stroke-width: 5px; fill: none'/>
+			<path d='M0 0L100 0L100 100L0 100Z' style='stroke: none; fill: %23ff7f7f'/>
+			<path d='M18 66A40 40 0 0 0 82 66' style='stroke: %23000000; stroke-width: 5px; fill: none'/>
+			<path d='M24 16L36 16L36 52L24 52ZM64 16L76 16L76 52L64 52Z' style='stroke: none; fill: %23000000'/>
 		</svg>
 	">
 	<style>
@@ -2003,6 +2004,10 @@
 				addLog("[Petal] "+this.name+" received "+resultingDamage+" damage from "+mobName+".","#9f9fdf")
 				this.currenthealth-=resultingDamage
 			}
+			if(this.currenthealth>0 && isMob(mob) && isPFLF(this.currenthealth)) {
+				addLog("Claim "+this.currenthealth,"#bf7fbf")
+				this.currenthealth=0
+			}
 			if(this.currenthealth<=0) {
 				this.destroy(mob)
 			} else {
@@ -2581,6 +2586,12 @@
 			this.actionbar=0,this.count=0,this.calculate=0
 			if(MobAttributeList[this.id].match(/(?<=COUNT=)\d+/)) this.count=parseInt(MobAttributeList[this.id].match(/(?<=COUNT=)\d+/))
 			this.effect=new Object()
+			this.rock=6
+			if(explore.floor===1) this.rock=1
+			this.realname=this.name
+			this.name="Rock"
+			this.realid=this.id
+			this.id=1
 		}
 		function isMob(potentialMob) {
 			return Mob.prototype.isPrototypeOf(potentialMob)
@@ -2666,6 +2677,31 @@
 		}
 		Mob.prototype.remove=async function() {
 			if(this.currenthealth>0) return
+			if(this.rock>0) {
+				if(!this.effect.hasOwnProperty("selfkill") && roll(1,this.rock)>1) {
+					addLog("[Mob] "+this.name+" is not destroyed.","#ff9f0f")
+					this.effect.squeezing=true
+					await squeezeGrid(getGrid(0,this.x,this.y))
+					delete this.effect.squeezing
+					this.rock--
+					this.currenthealth=this.health
+					this.actionbar=0
+					this.print()
+					return
+				}
+				addLog("[Mob] "+this.name+" is not destroyed.","#ff9f0f")
+				this.effect.squeezing=true
+				await squeezeGrid(getGrid(0,this.x,this.y))
+				delete this.effect.squeezing
+				delete this.rock
+				delete this.effect.selfkill
+				this.id=this.realid
+				this.name=this.realname
+				this.currenthealth=this.health
+				this.actionbar=100*explore.floor
+				this.print()
+				return
+			}
 			if(this.count>1) {
 				addLog("[Mob] A part of "+this.name+" is destroyed.","#ffbf00")
 				this.effect.squeezing=true
@@ -2967,6 +3003,10 @@
 				addLog("[Mob] "+this.name+" is executed.","#bfbf00")
 				this.currenthealth=0
 			}
+			if(this.currenthealth>0 && isPetal(petal) && isPFLF(this.currenthealth)) {
+				addLog("Claim "+this.currenthealth,"#bf7fbf")
+				this.currenthealth=0
+			}
 			this.print()
 			if(this.currenthealth<=0) this.remove()
 		}
@@ -3032,7 +3072,7 @@
 			}
 			animation=false
 			if(MobAttributeList[this.id].match("Destroys without loot")!==null) {
-				this.effect.noloot=true
+				if(!this.rock) this.effect.noloot=true
 				this.effect.selfkill=true
 				this.currenthealth=0
 				this.print()
@@ -3641,127 +3681,14 @@
 	</script>
 	<script>
 		const bookHTML=new Object()
-		bookHTML["Flower Artisan Guide"]="<h2>Flower Artisan Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>Combine or refine common petals into powerful new forms. By combining different petals with similar characteristics, you gain stronger one improved in level, giving stronger damaging attributes. By refining petal with high level, you gain stronger one improved in rarity, guaranting better durability and wear resistance. Be proficient in the two production methods, and you can easily overwhelm your opponents during battles. This book is your guide to mastering the art of petal craft.</span><br><span>For Rarity Up, you only need to select 1 petal with positive Level (and Rarity should not be Mythic). Higher Level increases the success chance and higher Rarity decreases the chance. The chance is always 100% for petal with at least 3 Level. However, you may find it not worth in some cases. Higher rarity grants your petal higher Health but Damage might be significant decreased since <span class='bold'>Rarity Up resets Level</span>.</span><br><span>For Level Up, you need to select at least 2 petals of the same type with identical Rarity and Level. The success chance decreases as Rarity and Level increases, and the decay stops after 3 Level. To increase the success chance, you need to put more petals at once. (X+1) petals grants you X times success chance. However, success chance exceeds 100% does nothing, and you lost all petals when success or lost [1,X] petals when fail, so putting all petals together is not a wise decision.</span><br><span>Before you begin, there's one more thing to remind you: The Base Four Influencing Fators (Speed, Reload, ATKBuff, DEFBuff) is <span class='bold'>kept</span> on Rarity Up. On Level Up, they <span class='bold'>independently inherit</span> from one material. Choose your materials wisely! Here is another multifunctional calculator which is quite convenient to use by simply inputting Rarity and Level. 3 0 or 4 2 for example.</span><input type='text' tabindex='-1' id='craft-detail' onkeydown='craftdetail(event.key)' class='inner-input' list='craftdetaillist' autocomplete='off' title='Craft Detail'><datalist id='craftdetaillist'><option value='3 0'><option value='4 2'></datalist>"
-		bookHTML["Flower Combat Guide"]="<h2>Flower Combat Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>When you enter a map for the first time, mobs will be spawned and fight against you. There is a threshold depends on Floor that prevents too many mobs existing at the same time. Therefore, when you defeat a mob, a new mob may spawn.</span><br><span>The process of a round in battle is divided into the following parts: At the beginning, your petals gain action based on speed. You can move petals, use them for attack or perform special skills. Then mobs gain action. Mob with action exceeding the threshold will attack and you use petal to defend. If you skip defend or the defend fails, you take the damage. By default value, moving a petal costs 100 action, while using a petal to attack costs 200 action. The threshold for mob is 200 action.</span><br><span>Your petals can attack or defend mobs from <span class='bold'>the front or the side column</span>. The success rate of attack is based on petal ATK (atk2 for front row and atk1 for middle row) and mob Dodge. The success rate of defend is based on petal DEF (def2 for back row and def1 for middle row) and mob Dodge. These two formula have significant difference. When the mob is from side column, the formula also uses petal Size. Petal Size is capped at 20, but the best value for side-defending is <span class='bold'>17 to 18 Size</span>.</span><br><span>For shootable petal, before any bounces, the Accuracy (the petal ATK in success rate formula for shootable petals) is always 100% inside range. For each distance exceeds range, the Accuracy is decreased by Accuracy Decline. If it hits the target, it can bounce between enemies. The Accuracy is decreased by Repeated Accuracy Decline each time it hits a enemy that already hit. The Accuracy is decreased by Bounce Accuracy Decline each bounce exceeds Bounce. Any bounce hits can only hit enemy within Bounce Range.</span><br><span>Since you are facing mobs from all directions and not only from the front, <span class='bold'>the first and last columns are connected</span>, which means that both your petals and mobs can move from the first column to the last column or inverted, and the first and last columns are side columns to each other. The distance between two grids is calculated by horizontal distance plus vertical distance <span class='bold'>without using the Pythagorean theorem</span>. The word 'Retire' means a petal disappears and can't be used again in the same fight. If you are defeated, you only have 30% probability to temporary keep loot and they could be lost if you are defeated again in the same map.</span><br><span>You can calculate chance in the following box. For example, Aa-48S12 calculates the success rate of attacking 80% Dodge mob in side column with 12 Size, 100% ATK and -4 ATKbuff petal, A4+a6F calculates the success rate of attacking 60% Dodge mob in the front column with 40% ATK and +10 ATKbuff petal, D3+05F calculates the success rate of defending 50% Dodge mob in the front column with 30% DEF and +0 DEFbuff petal.</span><input type='text' tabindex='-1' id='combat-calc' onkeydown='combatcalc(event.key)' class='inner-input' list='calclist' autocomplete='off' title='Calculator'><datalist id='calclist'><option value='Aa-48S12'><option value='A4+a6F'><option value='D3+05F'></datalist>"
 		bookHTML["Flower Control Guide"]="<h2>Flower Control Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><h3>Hot Keys</h3><div class='green-bg inner-box'><span style='color: #7f7f7f'>S: Open/Close settings</span><span style='color: #7f7f7f'>H: Open/Close help</span><span style='color: #7f7f7f'>Z: Open/Close inventory</span><span style='color: #7f7f7f'>V: Open/Close gallery</span><br><span style='color: #9f9f00'>W=↑: Move up</span><span style='color: #9f9f00'>D=→: Move right</span><span style='color: #9f9f00'>S=↓: Move down</span><span style='color: #9f9f00'>A=←: Move left</span><br><span style='color: #009f9f'>T: End turn (mostly)</span><span style='color: #009f9f'>M: Move</span><span style='color: #009f9f'>R: Attack</span><span style='color: #009f9f'>X: Special actions</span><br><span style='color: #ffffff'>Enter: Confirm</span><span style='color: #ffffff'>Backspace: Cancel</span></div>"
-		bookHTML["Flower Debate Guide"]="<h2 style='color: #7eef6d'>Flower Debate Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>Floor 1 Game: Debate Strategy.</span><span>Reward: Various good things, including talent system.</span><br><br><span>At the beginning, you and your opponent have the same Momentum. When one's Momentum drops to zero, the opponent win. You will receive rewards only when winning for the first time. There are <span class='bold'>no punishment</span> after failure, and attempts is not limited.</span><br><span>There are 4 types of basic cards: Rock(25%), Blood Stinger(25%), Dice(25%), Air(10%). Basic cards have random rarities from Common to Epic, and levels from 0 to 3. They are petals without attribute floating. If you get a high quality card and don't have any petals of that quality, the level will be reduced until you have a petal at same quality. If there is still no same quality petal after level reduced to 0, rarity will also be reduced.</span><br><span>There are 4 types of advanced cards: Yggdrasil(2%), Criticize(6%), Disregard(6%), Refresh(1%). The rarities of high quality cards are fixed at Legendary, and levels are fixed at 0. Each player has 6 cards.</span><br><span>There are 5 topics: Health(25%), Damage(25%), DPT(25%), Special(20%), Scarce(5%). For each topic, both players choose a card and compare. The loser will get Momentum reduced by 1. Then, both players draw a new card and start a new topic. Each topic has <span class='bold'>different judgments</span>:</span><span>1. Health Petals: If both player use basic cards, the one with higher health wins.</span><span>2. Damage Petals: If both player use basic cards, the one with higher damage wins. Blood stinger's damage is considered twice as much.</span><span>3. DPT Petals: If both player use basic cards, the one with higher DPT wins. Dice's DPT is considered 6 times as much. Rock is considered as it can hit twice.</span><span>4. Special Petals: If both player use basic cards, the one uses Air wins.</span><span>5. Scarce Petals: If both player use basic cards, no one wins.</span><br><span>Yggdrasil: It is considered as basic cards in topic 1~3. In topic 4~5 it wins all previous cards. In topic 5, it will also cause the opponent to lose an <span class='bold'>additional 2 Momentum</span> when win.</span><span>Criticize: It wins all previous cards in all topics.</span><span>Disregard: It wins all previous cards in all topics. However, the loser will keep the Momentum.</span><span>Refresh: It wins all previous cards in all topics. However, the loser will keep the Momentum. Instead, the winner discards all cards and draws new cards.</span><br><span>You can see the rarity of your opponent's card. And your attention is amazing, with a 20% chance of recognize when your opponent gains or moves Air.</span>"
-		bookHTML["Flower Evolutionary Guide"]="<h2>Flower Evolutionary Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>Consume the petals to absorb their vital essence. This raw energy fuels your growth, allowing you to level up and evolve. With each infusion of experience, you grow stronger, gain access to higher tier abilities, naturally ascending to greater heights. This ancient cycle of growth is detailed within these pages.</span><br><span>You gain petals from defeated mobs, higher rarity mobs have better droprate. You can see the detail in gallery. The base Experience for a petal is <span class='bold'>(RarityFactor)*(Level+1)</span>. For Common, Unusual, Rare, Epic, Legendary, Mythic Petals, the Factors are 8, 12, 20, 40, 100, 300 respectively. Then, the Experience is multiplied by a random value from 0.8 to 1.2, and rounded to nearest integer, so the expected Experience is equivalent to base Experience.</span><br><span>Since this mechanic is not difficult to understand, you need no calculator for this. I provided another calculator here which helps you get the basic stat of petals. Your gained petals have 20% basic stat attribute floating <span class='bold'>except some special kinds</span>. To use this box, you just need to simply input Name, Rarity, Level. For example, Corn 3 0 calculates the stat of Rare Corn, Plank 4 2 calculates the stat of Epic Plank++.</span><input type='text' tabindex='-1' id='petal-stat' onkeydown='petalstat(event.key)' class='inner-input' list='petalstatlist' autocomplete='off' title='Petal Stat'><datalist id='petalstatlist'><option value='Corn 3 0'><option value='Plank 4 2'></datalist>"
 		bookHTML["Flower Game Guide"]="<h2>Flower Game Guide <span style='color: #0078d7; font-style: italic; font-size: 12px; font-weight: noremal'>//TODO</span></h2><div class='white-bg inner-box'><span style='color: #008000'>#include&lt;PFLFtools.h&gt; <span style='color: #0078d7; font-style: italic;'>//should be replaced</span></span><span style='color: #008000'>#include&lt;iostream&gt;</span><span style='color: #008000'>#include&lt;time.h&gt;</span><span style='color: #008000'>#include&lt;math.h&gt;</span><span style='color: #008000'>#include&lt;string.h&gt;</span><span style='color: #008000'>#include&lt;fstream.h&gt;</span><span><span style='font-weight: bold'>using namespace</span> std<span style='color: #ff0000; font-weight: bold'>;</span></span><span><span style='font-weight: bold'>void</span> menu<span style='color: #ff0000; font-weight: bold'>()</span></span><span style='color: #ff0000; font-weight: bold'>{</span><span style='margin-left: 2em'>system<span style='color: #ff0000; font-weight: bold'>(</span><span style='color: #0000ff; font-weight: bold'>\"cls\"</span><span style='color: #ff0000; font-weight: bold'>);</span></span><span style='margin-left: 2em'>slowprint<span style='color: #ff0000; font-weight: bold'>(</span><span style='color: #0000ff; font-weight: bold'>\"↓MORE GAME (CLICK!)↓\"</span><span style='color: #ff0000; font-weight: bold'>,</span><span style='color: #800080'>50</span><span style='color: #ff0000; font-weight: bold'>);</span></span><span style='margin-left: 2em'>slowprint<span style='color: #ff0000; font-weight: bold'>(</span><a href='https://6triple6single.github.io/PFLF' target='_blank' style='color: #0000ff; font-weight: bold; text-decoration: none'>\"PFLF\"</a><span style='color: #ff0000; font-weight: bold'>,</span><span style='color: #800080'>50</span><span style='color: #ff0000; font-weight: bold'>);</span></span><span style='margin-left: 2em'>slowprint<span style='color: #ff0000; font-weight: bold'>(</span><a href='https://6triple6single.github.io/Virus1' target='_blank' style='color: #0000ff; font-weight: bold; text-decoration: none'>\"VIRUS 1\"</a><span style='color: #ff0000; font-weight: bold'>,</span><span style='color: #800080'>50</span><span style='color: #ff0000; font-weight: bold'>);</span></span><span style='margin-left: 2em'><span style='font-weight: bold'>return</span><span style='color: #ff0000; font-weight: bold'>;</span></span><span style='color: #ff0000; font-weight: bold'>}</span><span><span style='font-weight: bold'>int</span> main<span style='color: #ff0000; font-weight: bold'>()</span></span><span style='color: #ff0000; font-weight: bold'>{</span><span style='margin-left: 2em'>system<span style='color: #ff0000; font-weight: bold'>(</span><span style='color: #0000ff; font-weight: bold'>\"cls\"</span><span style='color: #ff0000; font-weight: bold'>);</span></span><span style='margin-left: 2em'>Sleep<span style='color: #ff0000; font-weight: bold'>(</span><span style='color: #800080'>2000</span><span style='color: #ff0000; font-weight: bold'>);</span></span><span style='color: #0078d7; font-style: italic; margin-left: 2em'>// loadtext();</span><span style='color: #0078d7; font-style: italic; margin-left: 2em'>// loadgallery();</span><span style='color: #0078d7; font-style: italic; margin-left: 2em'>// loadmarvel();</span><span style='margin-left: 2em'>menu<span style='color: #ff0000; font-weight: bold'>();</span></span><span style='margin-left: 2em'><span style='font-weight: bold'>return</span> <span style='color: #800080'>0</span><span style='color: #ff0000; font-weight: bold'>;</span></span><span style='color: #ff0000; font-weight: bold'>}</span></div>"
-		bookHTML["Flower Subsist Guide"]="<h2 style='color: #7eef6d'>Flower Subsist Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>In this long journey, it is inevitable to feel bored and tired, Traveler. You need enough time to strengthen yourself and travel towards higher places. But time won't wait for you. If you don't speed up, you will be greeted by the collapse of Florroom.</span><br><span>And you have realized that things are far more than that, your energy has started to drain slowly but steadily. The cyan vertical bar on the left represents your energy, the lower the energy, the weaker you will be. The upper limit of energy is 100%, and the lower limit is 36%. Never try to cross the <span class='bold'>64%</span> safe line, it will only accelerate your death.</span><br><span>Let's be more specific about the effects of energy on combat. As energy is lost, your petals lose more Health when hit, increased to 1/Energy of the original value. Your petals cause lower damage to mobs, which is multiplied by Energy. After crossing the safety line, the flower will receive higher damage, multiplied by 0.3/(Energy-35%). Petals also receive fewer action bars, which is (Energy-35%)/0.3 times the speed.</span><br><span>You should strive to maintain sufficient energy to enter the next floor, where you will receive a 6% energy recovery. Do not waste any items that provide energy recovery, as these tools are extremely scarce and crucial for your survival. To avoid losing too much energy, you need to always remember the following two things:</span><span>1. Don't spend too much turns in battle, as each turn will cause you to lose 0.01% Energy.</span><span>2. Defend mob attacks as much as possible, as each injury will cause you to lose 0.03% Energy.</span><br><span>That's all. Good luck.</span>"
-		bookHTML["Flower Survival Guide"]="<h2>Flower Survival Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>Welcome to the Florroom! This is a tower with 8 floors. As something you may not be familiar with, the goal of the game is to climb from Floor 0 (the bottom) to Floor 7. Here, you make powerful petals, travel between different regions and maps, defeat various mobs and continuously upgrade to gain stronger power!</span><br><span>This is your first book. As the story continues, you will learn more knowledge, which appears in the form of books in this section. If you don't have experience fighting in Florroom, it doesn't matter. You will receive the unique <span class='bold'>Flower Combat Guide</span> I wrote. Enter the name of this book below to get it!</span><br><span>If you remembered something, try writing in the following box to retrieve the corresponding item:</span><input type='text' tabindex='-1' id='item-code' onkeydown='itemcode(event.key)' class='inner-input' autocomplete='off' title='Code'><span>(NOt CASe SenSItiVE &amp; ign o r i ngspace s)</span>"
-		bookHTML["Flower Talent Guide"]="<h2 style='color: #7eef6d'>Flower Talent Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>Reawaken the potential power you lost. As you have reactivated your talent, you can enhance your various innate abilities by investing in talent points obtained through leveling up. Beware, the path is not fixed. You may respec your choices and retrieve your talent points, but with each reshaping there will be <span class='bold'>a growing cost</span>. Please think twice before starting.</span><br><span>Common talents unlock at level 5, each costing 2TP. Rare talents unlock at level 10, each costing 3TP. Mythic talents unlock at level 15, each costing 5TP. Purchase STA1~3 to start. You can purchase nodes connected with branches, which are colored yellow. There are \"-XTP\" nodes that connect similar talents, allowing you to spend less TP when studying both together. For example, purchasing TRE1~5 with THR1~5 requires 20TP, while purchasing TRE1~5, -5TP and THR5 only requires 17TP. Note that <span class='bold'>only highest level</span> of a specified talent is effective.</span>"
+		bookHTML["Flower Talent Guide"]="<h2 style='color: #7eef6d'>Flower Talent Guide</h2><span class='nowrap'>🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲🎲</span><br><span>Do you really need a guide for this?</span>"
 		let somerandomlimit3=1,somerandomlimit4=1
 		function book(modify) {
 			if(modify===-1 && player.bookreading>0) player.bookreading--
 			if(modify===1 && player.bookreading<player.book.length-1) player.bookreading++
 			document.getElementById("book-content").innerHTML=bookHTML[player.book[player.bookreading]]
-			if(player.book[player.bookreading]==="Flower Artisan Guide") {
-				let editingStatHTML="<h3>Level Up Statistics</h3>"
-				editingStatHTML+="<span style='color: #7f5f9f'>Total Level Up: "+player.bookstat.artisan.totallevelup
-				for(let i=1;i<=6;i++) {
-					if(i===1) {
-						editingStatHTML+="="
-					} else {
-						editingStatHTML+="+"
-					}
-					editingStatHTML+="<span style='color: "+rarityColorEP[i]+"'>"+player.bookstat.artisan.totalraritylevelup[i]+"</span>"
-				}
-				editingStatHTML+="</span><span style='color: #7f5f9f'>Total Petal Used: "+player.bookstat.artisan.totalleveluppetalused+"</span>"
-				editingStatHTML+="<span style='color: #5f9f5f'>Total Success: "+player.bookstat.artisan.totallevelupsuccess+"</span>"
-				editingStatHTML+="<span style='color: #5f9f5f'>Total Petal Lost on Success: "+player.bookstat.artisan.totalleveluppetallostsuccess+"</span>"
-				editingStatHTML+="<span style='color: #9f5f5f'>Total Fail: "+player.bookstat.artisan.totallevelupfail+"</span>"
-				editingStatHTML+="<span style='color: #9f5f5f'>Total Petal Lost on Fail: "+player.bookstat.artisan.totalleveluppetallostfail+"</span>"
-				editingStatHTML+="<span style='color: #7f5f9f'>Expected Success: "+approx(player.bookstat.artisan.totallevelupexpectedsuccess*100)/100+"</span>"
-				editingStatHTML+="<span style='color: #7f5f9f'>Success Variance: "+approx(player.bookstat.artisan.levelupsuccessvariance*1000)/1000+"</span>"
-				editingStatHTML+="<h3>Rarity Up Statistics</h3>"
-				editingStatHTML+="<span style='color: #5f7f9f'>Total Rarity Up: "+player.bookstat.artisan.totalrarityup
-				for(let i=1;i<=5;i++) {
-					if(i===1) {
-						editingStatHTML+="="
-					} else {
-						editingStatHTML+="+"
-					}
-					editingStatHTML+="<span style='color: "+rarityColorEP[i]+"'>"+player.bookstat.artisan.totalrarityrarityup[i]+"</span>"
-				}
-				editingStatHTML+="</span><span style='color: #5f9f5f'>Total Success: "+player.bookstat.artisan.totalrarityupsuccess+"</span>"
-				editingStatHTML+="<span style='color: #9f5f5f'>Total Fail: "+player.bookstat.artisan.totalrarityupfail+"</span>"
-				editingStatHTML+="<span style='color: #5f7f9f'>Expected Success: "+approx(player.bookstat.artisan.totalrarityupexpectedsuccess*100)/100+"</span>"
-				editingStatHTML+="<span style='color: #5f7f9f'>Success Variance: "+approx(player.bookstat.artisan.rarityupsuccessvariance*1000)/1000+"</span>"
-				document.getElementById("book-content").innerHTML+=editingStatHTML
-			}
-			if(player.book[player.bookreading]==="Flower Debate Guide") {
-				let editingStatHTML="<h3>Your opponents</h3><div class='green-bg inner-box'>"
-				for(let i=1;i<=9;i++) {
-					editingStatHTML+="<span style='color: "
-					if(player.floor1gamestat[i]==="Completed") {
-						editingStatHTML+="#5fbf5f"
-					} else if(player.floor1gamestat[i]==="Incomplete") {
-						editingStatHTML+="#9f9f5f"
-					} else {
-						editingStatHTML+="#7f7f7f"
-					}
-					editingStatHTML+="'>"
-					if(player.floor1gamestat[i]==="Locked" || fight.active===true || fight.hasOwnProperty("spevent")) {
-						editingStatHTML+="<button class='lred-bg srecbtn forbidden'>Locked</button>"
-					} else {
-						editingStatHTML+="<button onclick='startFight("+(100+i)+")' class='lblue-bg srecbtn pointer'>Start!</button>"
-					}
-					let reward=["","2*Time Shard","3*Time Shard","Talent Activation","2*Travel Ticket","3*Travel Ticket","Extra Energy Storage(WIP)","Nothing(WIP)","Nothing(WIP)","Nothing(WIP)"]
-					editingStatHTML+="<span class='llmargin' style='color: "+rarityColorEP[i]+"'>"+rarityName[i].slice(0,4)+".</span>"+"Flower, Reward: "+reward[i]
-					editingStatHTML+="</span>"
-				}
-				editingStatHTML+="</div>"
-				if(player.floor1gamestat[2]!=="Locked")
-				editingStatHTML+="<br><span>Opponents after <span style='color: "+rarityColorEP[2]+"'>"+rarityName[2]+"</span> have higher momentum.</span>"
-				if(player.floor1gamestat[4]!=="Locked")
-				editingStatHTML+="<span>Opponents after <span style='color: "+rarityColorEP[4]+"'>"+rarityName[4]+"</span> have higher DPT.</span>"
-				if(player.floor1gamestat[5]!=="Locked")
-				editingStatHTML+="<span>Opponents after <span style='color: "+rarityColorEP[5]+"'>"+rarityName[5]+"</span> have higher momentum again.</span>"
-				if(player.floor1gamestat[7]!=="Locked")
-				editingStatHTML+="<span>Opponents after <span style='color: "+rarityColorEP[7]+"'>"+rarityName[7]+"</span> have higher DPT again.</span>"
-				if(player.floor1gamestat[9]!=="Locked")
-				editingStatHTML+="<span><span style='color: "+rarityColorEP[9]+"'>"+rarityName[9]+"</span> opponent has higher damage.</span>"
-				document.getElementById("book-content").innerHTML+=editingStatHTML
-			}
-			if(player.book[player.bookreading]==="Flower Evolutionary Guide") {
-				let editingStatHTML="<h3>Absorb Statistics</h3>"
-				editingStatHTML+="<span style='color: #9f7f5f'>Total Petal Absorbed: "+player.bookstat.evolutionary.totalabsorb
-				for(let i=1;i<=6;i++) {
-					if(i===1) {
-						editingStatHTML+="="
-					} else {
-						editingStatHTML+="+"
-					}
-					editingStatHTML+="<span style='color: "+rarityColorEP[i]+"'>"+player.bookstat.evolutionary.totalrarityabsorb[i]+"</span>"
-				}
-				editingStatHTML+="</span><span style='color: #5f9f5f'>Total Exp Gained: "+player.bookstat.evolutionary.totalgainedexp+"</span>"
-				editingStatHTML+="<span style='color: #5f9f5f'>Expected Exp: "+player.bookstat.evolutionary.totalexpectedexp+"</span>"
-				editingStatHTML+="<span style='color: #5f9f5f'>Exp Variance: "+approx(player.bookstat.evolutionary.expvariance*1000)/1000+"</span>"
-				if(player.level<50) {
-					editingStatHTML+="<h3>Level Rewards</h3><div class='green-bg inner-box'>"
-					for(let i=betterFloor(player.level/10)*10+1;i<=betterFloor(player.level/10)*10+10;i++) {
-						editingStatHTML+="<span style='color: "
-						if(i<=player.level) {
-							editingStatHTML+="#5fbf5f"
-						} else if(i===player.level+1) {
-							editingStatHTML+="#9f9f5f"
-						} else {
-							editingStatHTML+="#7f7f7f"
-						}
-						editingStatHTML+="'>Level "+i+(i<10? " ":"")+": Requires "+LevelExp(i-1)+" Exp, Rewards: 3 Talent Point"
-						if(i===10 || i===20 || i===30 || i===40) editingStatHTML+=" <span class='bold'>And 1 Slot</span>"
-						editingStatHTML+="</span>"
-					}
-					editingStatHTML+="</div>"
-				}
-				if(player.book.indexOf("Flower Talent Guide")===-1) editingStatHTML=editingStatHTML.replaceAll("3 Talent Point","???")
-				document.getElementById("book-content").innerHTML+=editingStatHTML
-			}
-			if(player.book[player.bookreading]==="Flower Survival Guide") {
-				if(explore.floor===1) {
-					document.getElementById("book-content").innerHTML=document.getElementById("book-content").innerHTML.replace(" This is a tower with 8 floors. As something you may not be familiar with, the goal of the game is to climb from Floor 0 (the bottom) to Floor 7."," This is a tower with 7 floors. As something you should have known, the goal of the game is to climb from Floor 1 to Floor 7.")
-				}
-			}
 			if(player.book[player.bookreading]==="Flower Talent Guide") {
 				let editingTalentHTML="<br><span id='totaltp' style='color: #5f9f5f'>Total Talent Point: "+TotalTalentPoint()+"</span>"
 				editingTalentHTML+="<span id='remaintp' style='color: #5f9f5f'>Remaining Talent Point: "+RemainingTalentPoint()+"</span>"
@@ -3806,8 +3733,8 @@
 		let logDisplay=true,cleanerDegree=0
 		function cleanerRotate(force=false) {
 			if(cleanerDegree===0 && force===false) return
-			cleanerDegree=(cleanerDegree+3)%270
-			document.getElementById("cleaner").style.transform="rotate("+cleanerDegree+"deg)"
+			cleanerDegree=(cleanerDegree+7)%90
+			document.getElementById("cleaner").style.transform="rotate("+(cleanerDegree/2)+"deg)"
 		}
 		function addLog(text,color="#000000") {
 			if(text.startsWith("[Help]") && player.settings.closehelplog===true) return
@@ -3834,25 +3761,12 @@
 		}
 		async function cleanLog() {
 			if(cleanerDegree>0) return
-			document.getElementById("log").innerHTML=""
+			addLog("<span class='red-bg white'>Uncaught ReferenceError: cleanLog is not defined<br>at &lt;anonymous>:79:76</span>")
 			cleanerRotate(true)
 		}
 		function expandLog() {
-			if(logDisplay) {
-				logDisplay=false
-				document.getElementById("log").style.display="none"
-				document.getElementById("command-call").style.display="none"
-				document.getElementById("cleaner").style.display="none"
-				document.getElementById("command").style.width="unset"
-				document.getElementById("expander").children[1].style.display="unset"
-			} else {
-				logDisplay=true
-				document.getElementById("log").style.display=""
-				document.getElementById("command-call").style.display=""
-				document.getElementById("cleaner").style.display=""
-				document.getElementById("command").style.width=""
-				document.getElementById("expander").children[1].style.display=""
-			}
+			document.getElementById("log").style.display="none"
+			document.getElementById("command").style.display="none"
 		}
 		function command(key) {
 			if(key!=="Enter") return
@@ -3865,1124 +3779,43 @@
 				if(commandInput==="help") {
 					validCommand=true
 					addLog("[Help] Help: Print list of all available commands. (Format: .help)","#bf7fbf")
-					addLog("[Help] PFLFstart: Play PFLF with bot#7976. (Format: .PFLFstart)","#bf7fbf")
-					addLog("[Help] PFLFend: End PFLF game. (Format: .PFLFend)","#bf7fbf")
-					addLog("[Help] Claim: Claim number in PFLF. (Format: .claim [number])","#bf7fbf")
-					addLog("[Help] PFLFget: Print PFLF state. (Format: .PFLFget)","#bf7fbf")
-					addLog("[Help] PFLFhighscore: Print PFLF highscore. (Format: .PFLFhighscore)","#bf7fbf")
-				}
-				if(commandInput==="PFLFstart" && player.PFLF.active===false) {
-					validCommand=true
-					player.PFLF.active=true
-					player.PFLF.turn=0
-					player.PFLF.score=-1001
-					player.PFLF.clear=-1
-					player.PFLF.dice=0
-					commandInput="claim 0"
-					addLog("[bot#7976] PFLF started!","#7f7fff")
-				}
-				if(commandInput==="PFLFend" && player.PFLF.active===true) {
-					validCommand=true
-					player.PFLF.active=false
-					addLog("[bot#7976] PFLF ended!","#7f7fff")
-				}
-				if(commandInput.startsWith("claim ") && player.PFLF.active===true) {
-					let testValid=true,claimNum=commandInput.slice(6).match(/^\d+/)
-					if(claimNum===null) testValid=false
-					if(testValid===true) {
-						claimNum=parseInt(claimNum)
-						testValid=isPFLF(claimNum)
-					}
-					if(testValid===true) {
-						let testStr1=player.PFLF.dice.toString(),testStr2=claimNum.toString()
-						if(testStr1==="0") testStr1=""
-						if(testStr2==="0") testStr2=""
-						for(let i=0;i<testStr2.length;i++) {
-							if(testStr1.indexOf(testStr2[i])===-1) {
-								testValid=false
-							} else {
-								testStr1=testStr1.slice(0,testStr1.indexOf(testStr2[i]))+testStr1.slice(testStr1.indexOf(testStr2[i])+1)
-							}
-						}
-						if(testValid===true) {
-							player.PFLF.score+=(testStr2.length+1)**3
-							if(testStr1==="") {
-								player.PFLF.clear++
-								player.PFLF.score+=1000
-							}
-							player.PFLF.dice=parseInt("0"+testStr1)
-						}
-					}
-					if(testValid===true) {
-						if(player.PFLF.dice>100000) {
-							if(player.PFLF.score>player.PFLF.highscore) {
-								player.PFLF.highscore=player.PFLF.score
-								player.PFLF.highscoreturn=player.PFLF.turn
-								player.PFLF.highscoreclear=player.PFLF.clear
-							}
-							addLog("[bot#7976] Final Turn: "+player.PFLF.turn+", Score: "+player.PFLF.score+", Clear: "+player.PFLF.clear,"#7f7fff")
-							player.PFLF.active=false
-						}  else {
-							player.PFLF.turn++
-							for(let i=1;i<=3;i++) player.PFLF.dice=player.PFLF.dice*10+dice()
-							commandInput="PFLFget"
-						}
-					}
-					validCommand=testValid
-				}
-				if(commandInput==="PFLFget" && player.PFLF.active===true) {
-					validCommand=true
-					addLog("[bot#7976] Turn: "+player.PFLF.turn+", Score: "+player.PFLF.score+", Clear: "+player.PFLF.clear+", Dice: "+player.PFLF.dice,"#7f7fff")
-				}
-				if(commandInput==="PFLFhighscore") {
-					validCommand=true
-					addLog("[bot#7976] Highest Score: "+player.PFLF.highscore+", Achieved with Turn "+player.PFLF.highscoreturn+" and Clear "+player.PFLF.highscoreclear+".","#7f7fff")
+					addLog("[Help] That's all, what are you expecting?","#bf7fbf")
 				}
 				if(validCommand===false) addLog("[Command] Invalid command. (Command not exist or available)","#bf7f3f")
 			} else {
 				addLog("[Chat] Traveler: "+commandInput.replaceAll("<","&lt;"))
 			}
 		}
-		function itemcode(key) {
-			if(key!=="Enter") return
-			let itemcodeInput=document.getElementById("item-code").value
-			document.getElementById("item-code").value=""
-			itemcodeInput=itemcodeInput.toLowerCase().replace(/\s/g,"")
-			if(!/^[a-z]+$/.test(itemcodeInput)) {
-				addLog("[Code] Invalid code. The code should only consist of letters and contains at least 1 letter.","#bf7f3f")
-				return
-			}
-			if(itemcodeInput==="flowercombatguide") {
-				if(player.book.indexOf("Flower Combat Guide")===-1) {
-					addLog("[Resource] You received Flower Combat Guide from item code.","#7fff7f")
-					player.book.push("Flower Combat Guide")
-				} else {
-					addLog("[Code] The code is already used.","#bf7f3f")
-				}
-				return
-			}
-			if(itemcodeInput==="pflf") {
-				addLog("[bot#7976] Play PFLF here!","#7f7fff")
-				return
-			}
-			if(itemcodeInput.match("perfect")!==null || itemcodeInput.match("bug")!==null) {
-				addLog("[79<sup>2</sup>] The game is perfect, there are no bugs","#ffdfff")
-				return
-			}
-			addLog("[Code] Empty code...","#bfbf7f")
-		}
-		function combatcalc(key) {
-			if(key!=="Enter") return
-			let combatcalcInput=document.getElementById("combat-calc").value
-			document.getElementById("combat-calc").value=""
-			if(!/^[AD][0-9a][-+][0-9a][0-9a](F|S\d+)$/.test(combatcalcInput)) {
-				addLog("[Calculator] Invalid input. The input should strictly follow the format /^[AD][0-9a][-+][0-9a][0-9a](F|S\\d+)$/.","#bf7f3f")
-				return
-			}
-			if(/-0/.test(combatcalcInput)) {
-				addLog("[Calculator] What is '-0'? This is pointless.","#bf7f3f")
-				return
-			}
-			let calcPetal=new Petal(),calcMob=new Mob()
-			if(combatcalcInput[1]==="a") {
-				calcPetal.atk1=100
-			} else {
-				calcPetal.atk1=parseInt(combatcalcInput[1])*10
-			}
-			calcPetal.atk2=calcPetal.atk1
-			if(combatcalcInput[3]==="a") {
-				calcPetal.atkbuff=10
-			} else {
-				calcPetal.atkbuff=parseInt(combatcalcInput[3])
-			}
-			if(combatcalcInput[2]==="-") calcPetal.atkbuff*=-1
-			if(combatcalcInput[4]==="a") {
-				calcMob.dodge=100
-			} else {
-				calcMob.dodge=parseInt(combatcalcInput[4])*10
-			}
-			if(combatcalcInput[0]==="A") {
-				if(combatcalcInput[5]==="F") {
-					addLog("[Calculator] The success rate of attacking "+calcMob.dodge+"% Dodge mob in the front column with "+calcPetal.atk1+"% ATK and "+combatcalcInput[2]+Math.abs(calcPetal.atkbuff)+" ATKbuff petal is "+AttackSuccessChance(calcPetal,calcMob,"Front","Middle")+"%","#5fbf5f")
-				} else {
-					calcPetal.size=parseInt(combatcalcInput.slice(6))
-					addLog("[Calculator] The success rate of attacking "+calcMob.dodge+"% Dodge mob in side column with "+calcPetal.size+" Size, "+calcPetal.atk1+"% ATK and "+combatcalcInput[2]+Math.abs(calcPetal.atkbuff)+" ATKbuff petal is "+AttackSuccessChance(calcPetal,calcMob,"Side","Middle")+"%","#5fbf5f")
-				}
-			}
-			if(combatcalcInput[0]==="D") {
-				calcPetal.def1=calcPetal.atk1
-				calcPetal.def2=calcPetal.atk2
-				calcPetal.defbuff=calcPetal.atkbuff
-				if(combatcalcInput[5]==="F") {
-					addLog("[Calculator] The success rate of defending "+calcMob.dodge+"% Dodge mob in the front column with "+calcPetal.def1+"% DEF and "+combatcalcInput[2]+Math.abs(calcPetal.defbuff)+" DEFbuff petal is "+DefendSuccessChance(calcPetal,calcMob,"Front","Middle")+"%","#5fbf5f")
-				} else {
-					calcPetal.size=parseInt(combatcalcInput.slice(6))
-					addLog("[Calculator] The success rate of defending "+calcMob.dodge+"% Dodge mob in side column with "+calcPetal.size+" Size, "+calcPetal.def1+"% DEF and "+combatcalcInput[2]+Math.abs(calcPetal.defbuff)+" DEFbuff petal is "+DefendSuccessChance(calcPetal,calcMob,"Side","Middle")+"%","#5fbf5f")
-				}
-			}
-		}
-		function petalstat(key) {
-			if(key!=="Enter") return
-			let petalstatInput=document.getElementById("petal-stat").value
-			document.getElementById("petal-stat").value=""
-			if(!/^.+\s\d\s\d$/.test(petalstatInput)) {
-				addLog("[Calculator] Invalid input. The input should strictly follow the format /^.+\\s\\d\\s\\d$/.","#bf7f3f")
-				return
-			}
-			let partSplit=petalstatInput.match(/^(.+)\s(\d)\s(\d)$/)
-			partSplit[2]=parseInt(partSplit[2])
-			partSplit[3]=parseInt(partSplit[3])
-			if(PetalNameList.indexOf(partSplit[1])===-1 || partSplit[2]<1 || partSplit[2]>6) {
-				addLog("[Calculator] The petal doesn't exist.","#bf7f3f")
-				return
-			}
-			let calcPetal=new Petal(partSplit[1],partSplit[2],partSplit[3],false)
-			addLog("[Calculator] The basic stat of "+rarityName[calcPetal.rarity]+" "+calcPetal.name+"+".repeat(calcPetal.level)+" is: Health="+calcPetal.health+", Damage="+calcPetal.damage+", Speed="+calcPetal.speed+", Reload="+calcPetal.reload+".","#5fbf5f")
-		}
-		function craftdetail(key) {
-			if(key!=="Enter") return
-			let craftdetailInput=document.getElementById("craft-detail").value
-			document.getElementById("craft-detail").value=""
-			if(!/^\d \d$/.test(craftdetailInput)) {
-				addLog("[Calculator] Invalid input. The input should strictly follow the format /^\\d \\d$/.","#bf7f3f")
-				return
-			}
-			let calcRarity=parseInt(craftdetailInput[0]),calcLevel=parseInt(craftdetailInput[2]),pendingText="[Calculator] For a petal with "
-			pendingText+=rarityName[calcRarity]+" Rarity and "+calcLevel+" Level: Base Health="+approx(PetalHealthMultiplier(calcRarity,calcLevel))+", Base Damage="+approx(PetalDamageMultiplier(calcRarity,calcLevel))+"."
-			pendingText+="<br>Level Up Chance="+PetalLevelUpChance(calcRarity,calcLevel,2)+"%, Base Health After="+approx(PetalHealthMultiplier(calcRarity,calcLevel+1))+", Base Damage After="+approx(PetalDamageMultiplier(calcRarity,calcLevel+1))+"."
-			if(PetalRarityUpChance(calcRarity,calcLevel)) {
-				pendingText+="<br>Rarity Up Chance="+PetalRarityUpChance(calcRarity,calcLevel)+"%, Base Health After="+approx(PetalHealthMultiplier(calcRarity+1,0))+", Base Damage After="+approx(PetalDamageMultiplier(calcRarity+1,0))+"."
-			}
-			addLog(pendingText,"#5fbf5f")
-		}
 		let dialogRemain="",dialogPrint=false
 		async function dialog(title,maintext,speed,bgColor="#ffffff",textColor="#000000") {
 			if(cornerDisplay()) return
 			if(title==="Skip") {
-				if(explore.event.searchlibrary===2 && dialogRemain.match(/\)/)) return
-				if(explore.event.searchlibrary===10 && dialogRemain.match(/\)/)) return
-				if(explore.event.searchlibrary===12 && dialogRemain.match(/\)/)) return
-				if(explore.event.floor1hotel===2 && dialogRemain.length>0) return
 				if(dialogRemain.length) {
 					dialogPrint=false
 					document.getElementById("dialog-maintext").innerHTML+=dialogRemain
 					dialogRemain=""
 					return
 				}
-				if(explore.event.startdialog===0 && player.settings.dialog==="Skip") explore.event.startdialog=15
 				if(explore.event.startdialog===0) {
-					dialog("Traveler (You)","The 8th Floor isn't a lie! Let's continue...","Unset","#dfdfff")
+					dialog("Title","Dialog content with blue background","Unset","#dfdfff")
 					explore.event.startdialog=1
 					return
 				}
 				if(explore.event.startdialog===1) {
-					dialog("Traveler (You)","Wait, why have I become so weak? Where are my petals???","Unset","#dfdfff")
+					dialog("Title","Dialog content with green background","Unset","#dfffdf")
 					explore.event.startdialog=2
 					return
 				}
 				if(explore.event.startdialog===2) {
-					dialog("Garden Watcher","A new flower? Wow, you really look like the Traveler in book.","Unset","#dfffdf")
+					dialog("Title","Dialog content with grey background","Unset","#dfdfdf")
 					explore.event.startdialog=3
 					return
 				}
 				if(explore.event.startdialog===3) {
-					dialog("Traveler (You)","The Traveler in book?","Unset","#dfdfff")
-					explore.event.startdialog=4
-					return
-				}
-				if(explore.event.startdialog===4) {
-					dialog("Garden Watcher","Don't you know that book? It seems that you are a new flower here. Well, Traveler is a powerful flower who wants to climb to the top of Florroom. A great author wrote a novel on this, and the book went viral. Within 64 days after the release, 9% of the flowers chose to leave for exploration. For this reason, the Flower Government has ordered that all flowers will not be accepted again once they are left.","Unset","#dfffdf")
-					explore.event.startdialog=5
-					return
-				}
-				if(explore.event.startdialog===5) {
-					dialog("Traveler (You)","No, I'm the Traveler.","Unset","#dfdfff")
-					explore.event.startdialog=6
-					return
-				}
-				if(explore.event.startdialog===6) {
-					dialog("(The Florroom)","(...)","Unset","#dfdfdf")
-					explore.event.startdialog=7
-					return
-				}
-				if(explore.event.startdialog===7) {
-					dialog("Traveler (You)","So this is the Base Floor? I have lost all my petals. And I feel like I've lost my abilities.","Unset","#dfdfff")
-					explore.event.startdialog=8
-					return
-				}
-				if(explore.event.startdialog===8) {
-					dialog("Garden Watcher","Yes. You are going again, right? Can you take me with you, please?","Unset","#dfffdf")
-					explore.event.startdialog=9
-					return
-				}
-				if(explore.event.startdialog===9) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.startdialog=10;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>No, I'm lazy.</button><button type='button' onclick='event.stopPropagation();explore.event.startdialog=11;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>No, I'm too weak.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.startdialog=12;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>No, I choose C.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.startdialog===10) {
-					dialog("Traveler (You)","Of course, I will go again. But I'm too lazy to take you.","Unset","#dfdfff")
-					explore.event.startdialog=13
-					return
-				}
-				if(explore.event.startdialog===11) {
-					dialog("Traveler (You)","Of course, I will go again. But I need to get stronger first.","Unset","#dfdfff")
-					explore.event.startdialog=13
-					return
-				}
-				if(explore.event.startdialog===12) {
-					dialog("Traveler (You)","I will go again but no.","Unset","#dfdfff")
-					explore.event.startdialog=13
-					return
-				}
-				if(explore.event.startdialog===13) {
-					dialog("Garden Watcher","I'm sad for that... Perhaps you can still find some useful books in library!","Unset","#dfffdf")
-					explore.event.startdialog=14
-					return
-				}
-				if(explore.event.startdialog===14) {
-					dialog("Traveler (You)","Thanks. Bye then.","Unset","#dfdfff")
-					explore.event.startdialog=15
-					return
-				}
-				if(explore.event.startdialog===15) {
 					explore.event.startdialog="Completed"
 					document.getElementById("dialog").style.display="none"
 					animation=false
 					setExplore()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.searchlibrary===0 && player.settings.dialog==="Skip") explore.event.searchlibrary=11
-				if(explore.event.searchlibrary===0) {
-					displayCentralRoom()
-					dialog("Librarian","Hello, may I ask what book you need to borrow?","Unset","#bfffff")
-					explore.event.searchlibrary=1
-					return
-				}
-				if(explore.event.searchlibrary===1) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=2;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Survival Guide.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=3;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Evolutionary Guide.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=4;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Artisan Guide.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===2) {
-					await dialog("Librarian","(Finding book, Finding book, Finding book) Here it is. What else do you need?","Slow","#bfffff")
-					explore.event.searchlibrary=5
-					if(player.book.indexOf("Flower Survival Guide")===-1) {
-						player.book.push("Flower Survival Guide")
-						addLog("[Resource] You received Flower Survival Guide from Library.","#7fff7f")
-					}
-					return
-				}
-				if(explore.event.searchlibrary===3) {
-					dialog("Librarian","Sorry, this book has already been borrowed out.","Unset","#bfffff")
-					explore.event.searchlibrary=6
-					return
-				}
-				if(explore.event.searchlibrary===4) {
-					dialog("Librarian","Sorry, this book has already been borrowed out.","Unset","#bfffff")
-					explore.event.searchlibrary=7
-					return
-				}
-				if(explore.event.searchlibrary===5) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=8;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Evolutionary Guide.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=9;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Artisan Guide.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===6) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=10;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Survival Guide.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=11;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Artisan Guide.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===7) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=12;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Survival Guide.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=11;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Evolutionary Guide.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===8) {
-					dialog("Librarian","Sorry, this book has already been borrowed out.","Unset","#bfffff")
-					explore.event.searchlibrary=13
-					return
-				}
-				if(explore.event.searchlibrary===9) {
-					dialog("Librarian","Sorry, this book has already been borrowed out.","Unset","#bfffff")
-					explore.event.searchlibrary=14
-					return
-				}
-				if(explore.event.searchlibrary===10) {
-					await dialog("Librarian","(Finding book, Finding book, Finding book) Here it is. What else do you need?","Slow","#bfffff")
-					explore.event.searchlibrary=13
-					if(player.book.indexOf("Flower Survival Guide")===-1) {
-						player.book.push("Flower Survival Guide")
-						addLog("[Resource] You received Flower Survival Guide from Library.","#7fff7f")
-					}
-					return
-				}
-				if(explore.event.searchlibrary===11) {
-					await dialog("Librarian","Sorry, this book has already been borrowed out too. The only thing I can give you is this Survival Guide. Bye.","Unset","#bfffff")
-					explore.event.searchlibrary=15
-					if(player.book.indexOf("Flower Survival Guide")===-1) {
-						player.book.push("Flower Survival Guide")
-						addLog("[Resource] You received Flower Survival Guide from Library.","#7fff7f")
-					}
-					return
-				}
-				if(explore.event.searchlibrary===12) {
-					await dialog("Librarian","(Finding book, Finding book, Finding book) Here it is. What else do you need?","Slow","#bfffff")
-					explore.event.searchlibrary=14
-					if(player.book.indexOf("Flower Survival Guide")===-1) {
-						player.book.push("Flower Survival Guide")
-						addLog("[Resource] You received Flower Survival Guide from Library.","#7fff7f")
-					}
-					return
-				}
-				if(explore.event.searchlibrary===13) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=16;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Artisan Guide.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===14) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=16;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>The Evolutionary Guide.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===15) {
-					explore.event.searchlibrary="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					setPlayer()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.searchlibrary===16) {
-					dialog("Librarian","Sorry, this book has already been borrowed out too.","Unset","#bfffff")
-					explore.event.searchlibrary=17
-					return
-				}
-				if(explore.event.searchlibrary===17) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=15;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Bye.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.searchlibrary=18;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>kys nob.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.searchlibrary===18) {
-					dialog("Librarian","No noise allowed in the library! (close the door)","Unset","#bfffff")
-					explore.event.searchlibrary=15
-					return
-				}
-				if(explore.event.basefloorwarehouse===0 && player.settings.dialog==="Skip") explore.event.basefloorwarehouse=14
-				if(explore.event.basefloorwarehouse===0) {
-					displayCentralRoom()
-					dialog("(The Florroom)","Traveler walked into a warehouse. The goods inside are messy, like they were left behind after looting.","Unset","#dfdfdf")
-					explore.event.basefloorwarehouse=1
-					return
-				}
-				if(explore.event.basefloorwarehouse===1) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=2;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Walk around warehouse.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=3;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Find some drinks.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=4;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Search for suitable tools.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===2) {
-					if(maintext!==6361) addLog("[Resource] You found an unusual leaf. It seems like a good petal.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=5;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Find some drinks.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=6;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Search for suitable tools.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===3) {
-					if(maintext!==6361) addLog("[Resource] You found a large box filled with Energy Drink. You can't take away all the drinks, so you decided to take 20 of them.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=7;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Walk around warehouse.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=8;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Search for suitable tools.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===4) {
-					if(maintext!==6361) addLog("[Resource] You found a bow with 10 arrows.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=9;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Walk around warehouse.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=10;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Find some drinks.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===5) {
-					if(maintext!==6361) addLog("[Resource] You found a large box filled with Energy Drink. You can't take away all the drinks, so you decided to take 20 of them.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=11;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Search for suitable tools.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===6) {
-					if(maintext!==6361) addLog("[Resource] You found a bow with 10 arrows.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=12;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Find some drinks.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===7) {
-					if(maintext!==6361) addLog("[Resource] You found an unusual leaf. It seems like a good petal.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=11;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Search for suitable tools.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===8) {
-					if(maintext!==6361) addLog("[Resource] You found a bow with 10 arrows.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=13;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Walk around warehouse.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===9) {
-					if(maintext!==6361) addLog("[Resource] You found an unusual leaf. It seems like a good petal.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=12;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Find some drinks.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===10) {
-					if(maintext!==6361) addLog("[Resource] You found a large box filled with Energy Drink. You can't take away all the drinks, so you decided to take 20 of them.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=13;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Walk around warehouse.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===11) {
-					if(maintext!==6361) addLog("[Resource] You found a bow with 10 arrows.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=14;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>That's enough, leave warehouse.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===12) {
-					if(maintext!==6361) addLog("[Resource] You found a large box filled with Energy Drink. You can't take away all the drinks, so you decided to take 20 of them.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=14;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>That's enough, leave warehouse.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===13) {
-					if(maintext!==6361) addLog("[Resource] You found an unusual leaf. It seems like a good petal.","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorwarehouse=14;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>That's enough, leave warehouse.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorwarehouse===14) {
-					explore.event.basefloorwarehouse="Completed"
-					document.getElementById("dialog").style.display="none"
-					loot("Leaf",2,0)
-					player.item.add("Energy Drink",20)
-					player.item.add("Arrow",10)
-					animation=false
-					setExplore()
-					setPlayer()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.basefloorexitcentral===0) {
-					displayCentralRoom()
-					dialog("(The Florroom)","Are you sure to exit central room?","Instant","#dfdfdf")
-					explore.event.basefloorexitcentral=1
-					return
-				}
-				if(explore.event.basefloorexitcentral===1) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorexitcentral=2;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>No, I forgot something.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorexitcentral=3;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Yes, I'm sure.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorexitcentral===2) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.basefloorexitcentral=3;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Yes, I'm sure.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.basefloorexitcentral===3) {
-					explore.event.basefloorexitcentral="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					explore.explored[10]=true
-					setExplore()
-					displayMapItem()
-					displayMap()
-					return
-				}
-				if(explore.event.evolutionaryguide===1 && player.settings.dialog==="Skip") explore.event.evolutionaryguide=2
-				if(explore.event.evolutionaryguide===1) {
-					await dialog("(The Florroom)","Traveler found a book under boulder. The title \"Flower Survival Guide\" appears on the side of the book. This book is important and it should not be difficult to push away the boulder to get the book...","Unset","#dfdfdf")
-					explore.event.evolutionaryguide=2
-					return
-				}
-				if(explore.event.evolutionaryguide===2) {
-					explore.event.evolutionaryguide="Incomplete"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					return
-				}
-				if(explore.event.evolutionaryguide===3 && player.settings.dialog==="Skip") explore.event.evolutionaryguide=4
-				if(explore.event.evolutionaryguide===3) {
-					await dialog("(The Florroom)","Traveler got the book. On the cover of the book, there is a sentence: \"I have got all the Flower Artisan Guide from Library using my 125 alt accounts. If you want this book, come to Desert, find me and show me your true abilities.\"","Unset","#dfdfdf")
-					explore.event.evolutionaryguide=4
-					return
-				}
-				if(explore.event.evolutionaryguide===4) {
-					explore.event.evolutionaryguide="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					player.book.push("Flower Evolutionary Guide")
-					addLog("[Resource] You received Flower Evolutionary Guide.","#7fff7f")
-					setPlayer()
-					return
-				}
-				if(explore.event.artisanguide===1 && player.settings.dialog==="Skip") explore.event.artisanguide=2
-				if(explore.event.artisanguide===1) {
-					await dialog("Summoner","A new challenger? Well, let's get started now.","Unset","#ffffbf")
-					explore.event.artisanguide=2
-					return
-				}
-				if(explore.event.artisanguide===2) {
-					explore.event.artisanguide="Incomplete"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					return
-				}
-				if(explore.event.artisanguide===3 && player.settings.dialog==="Skip") explore.event.artisanguide=5
-				if(explore.event.artisanguide===3) {
-					await dialog("Summoner","I recognize your strength, this book is for you. However, only those with exceptional talent can master the essence of crafting, and no one in this world can compare to me.","Unset","#ffffbf")
-					explore.event.artisanguide=4
-					return
-				}
-				if(explore.event.artisanguide===4) {
-					dialog("(The Florroom)","After Summoner finished speaking, he took out a book emiting bright yellow light with a striking title: Unusual Flower Artisan Guide+ ! (of course, not for you)","Unset","#dfdfdf")
-					explore.event.artisanguide=5
-					return
-				}
-				if(explore.event.artisanguide===5) {
-					explore.event.artisanguide="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					player.friend.summoner="Floor 0 complete"
-					player.book.push("Flower Artisan Guide")
-					addLog("[Resource] You received Flower Artisan Guide.","#7fff7f")
-					setPlayer()
-					return
-				}
-				if(explore.event.basefloorending===0 && player.settings.dialog==="Skip") {
-					document.getElementById("end1").style["pointer-events"]="unset"
-					for(let i=0;i<=30;i++) {
-						document.getElementById("end1").style.opacity=i/30
-						if(i===15) {
-							document.getElementById("dialog").style.display="none"
-							animation=false
-						}
-						await delay(100)
-					}
-					location.reload()
-					return
-				}
-				if(explore.event.basefloorending===0) {
-					dialog("(The Florroom)","Traveler defeated all guardians. The Jungle Gate opens.","Unset","#dfdfdf")
-					explore.event.basefloorending=1
-					return
-				}
-				if(explore.event.basefloorending===1) {
-					dialog("(The Florroom)","He walked up the steps leading to Floor 1.","Unset","#dfdfdf")
-					explore.event.basefloorending=2
-					return
-				}
-				if(explore.event.basefloorending===2) {
-					dialog("(The Florroom)","He walks.","Unset","#dfdfdf")
-					explore.event.basefloorending=3
-					return
-				}
-				if(explore.event.basefloorending===3) {
-					dialog("(The Florroom)","He continue walks.","Unset","#dfdfdf")
-					explore.event.basefloorending=4
-					return
-				}
-				if(explore.event.basefloorending===4) {
-					dialog("(The Florroom)","He feels that time is freezing.","Unset","#dfdfdf")
-					explore.event.basefloorending=5
-					clearAllInterval()
-					return
-				}
-				if(explore.event.basefloorending===5) {
-					dialog("(The Florroom)","But he doesn't care.","Unset","#dfdfdf")
-					explore.event.basefloorending=6
-					return
-				}
-				if(explore.event.basefloorending===6) {
-					dialog("(The Florroom)","He walks.","Unset","#dfdfdf")
-					explore.event.basefloorending=7
-					document.getElementById("calendar-day").setAttribute("class","grey")
-					document.getElementById("calendar-day").innerHTML="Day &("
-					return
-				}
-				if(explore.event.basefloorending===7) {
-					dialog("(The Florroom)","He walks.He walks.","Instant","#dfdfdf")
-					explore.event.basefloorending=8
-					document.getElementById("calendar-hour").setAttribute("class","grey")
-					document.getElementById("calendar-hour").innerHTML="&("
-					return
-				}
-				if(explore.event.basefloorending===8) {
-					dialog("(The Florroom)","He walks.He walks.HE WALKS","Instant","#dfdfdf")
-					explore.event.basefloorending="Completed"
-					document.getElementById("calendar-minute").setAttribute("class","grey")
-					document.getElementById("calendar-minute").innerHTML="&("
-					document.getElementById("end1").style["pointer-events"]="unset"
-					for(let i=0;i<=30;i++) {
-						document.getElementById("end1").style.opacity=i/30
-						if(i===15) {
-							document.getElementById("dialog").style.display="none"
-							animation=false
-						}
-						await delay(100)
-					}
-					location.reload()
-					return
-				}
-				if(explore.event.floor1startdialog===0 && player.settings.dialog==="Skip") explore.event.floor1startdialog=19
-				if(explore.event.floor1startdialog===0) {
-					dialog("Traveler (You)","(Waking up) Where am I now?","Unset","#dfdfff")
-					explore.event.floor1startdialog=1
-					return
-				}
-				if(explore.event.floor1startdialog===1) {
-					dialog("(The Florroom)","He starts walking around. There are some messy newspapers on the ground. He picked up one and read.","Unset","#dfdfdf")
-					explore.event.floor1startdialog=2
-					return
-				}
-				if(explore.event.floor1startdialog===2) {
-					dialog("(Newspaper)","BREAKING NEWS: The underground world suddenly collapsed! The reason is unknown and is currently under investigation.","Slow","#ffffff")
-					explore.event.floor1startdialog=3
-					return
-				}
-				if(explore.event.floor1startdialog===3) {
-					dialog("(Newspaper)","Recently, there have been a large number of flowers claiming to come from underground world, and the police are registering their information.","Slow","#ffffff")
-					explore.event.floor1startdialog=4
-					return
-				}
-				if(explore.event.floor1startdialog===4) {
-					dialog("(Newspaper)","Some of them have already formed squads, searching or digging for downward passages. They have received support from the construction committee. Good luck to them.","Slow","#ffffff")
-					explore.event.floor1startdialog=5
-					return
-				}
-				if(explore.event.floor1startdialog===5) {
-					dialog("(Newspaper)","In addition, we also interviewed a flower named Summoner. According to him, he was on a staircase when the collapse occurred and felt the surrounding time and space becoming chaotic, which has some credibility.","Slow","#ffffff")
-					explore.event.floor1startdialog=6
-					return
-				}
-				if(explore.event.floor1startdialog===6) {
-					dialog("(The Florroom)","Right at this moment, several police arrived.","Unset","#dfdfdf")
-					explore.event.floor1startdialog=7
-					return
-				}
-				if(explore.event.floor1startdialog===7) {
-					dialog("Police","Here comes a new flower!","Unset","#9f9fff")
-					explore.event.floor1startdialog=8
-					return
-				}
-				if(explore.event.floor1startdialog===8) {
-					dialog("Police","Name?","Unset","#9f9fff")
-					explore.event.floor1startdialog=9
-					return
-				}
-				if(explore.event.floor1startdialog===9) {
-					dialog("Traveler (You)","Traveler.","Unset","#dfdfff")
-					explore.event.floor1startdialog=10
-					return
-				}
-				if(explore.event.floor1startdialog===10) {
-					dialog("Police","Age?","Unset","#9f9fff")
-					explore.event.floor1startdialog=11
-					return
-				}
-				if(explore.event.floor1startdialog===11) {
-					dialog("Traveler (You)","I don't know.","Unset","#dfdfff")
-					explore.event.floor1startdialog=12
-					return
-				}
-				if(explore.event.floor1startdialog===12) {
-					dialog("Police","Fine. Turn left ahead and go to the hotel to register. Here is your ID card.","Unset","#9f9fff")
-					explore.event.floor1startdialog=13
-					return
-				}
-				if(explore.event.floor1startdialog===13) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1startdialog=14;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Sure.</button><button type='button' onclick='event.stopPropagation();explore.event.floor1startdialog=15;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>I have questions...</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1startdialog===14) {
-					dialog("Police","Don't you have any question to ask?","Unset","#9f9fff")
-					explore.event.floor1startdialog=16
-					return
-				}
-				if(explore.event.floor1startdialog===15) {
-					dialog("Traveler (You)","What is the cause of the collapse?","Unset","#dfdfff")
-					explore.event.floor1startdialog=18
-					return
-				}
-				if(explore.event.floor1startdialog===16) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1startdialog=17;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>No.</button><button type='button' onclick='event.stopPropagation();explore.event.floor1startdialog=15;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Yes, I have questions.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1startdialog===17) {
-					dialog("Police","You are interesting...","Unset","#9f9fff")
-					explore.event.floor1startdialog=19
-					return
-				}
-				if(explore.event.floor1startdialog===18) {
-					dialog("Police","They have already discovered some connections... Remember, always pay attention to the time.","Unset","#9f9fff")
-					explore.event.floor1startdialog=19
-					return
-				}
-				if(explore.event.floor1startdialog===19) {
-					explore.event.floor1startdialog="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.floor1hotel===0 && player.settings.dialog==="Skip") explore.event.floor1hotel=4
-				if(explore.event.floor1hotel===0) {
-					displayCentralRoom()
-					dialog("Clerk","Please show me your ID card.","Fast","#ffffdf")
-					explore.event.floor1hotel=1
-					return
-				}
-				if(explore.event.floor1hotel===1) {
-					dialog("Traveler (You)","Here you are.","Unset","#dfdfff")
-					explore.event.floor1hotel=2
-					return
-				}
-				if(explore.event.floor1hotel===2) {
-					displayCentralRoom()
-					dialog("Clerk","Okay... Wait...","Slow","#ffffdf")
-					explore.event.floor1hotel=3
-					return
-				}
-				if(explore.event.floor1hotel===3) {
-					displayCentralRoom()
-					dialog("Clerk","Someone bought a nearby house for you. That one with yellow roof.","Fast","#ffffdf")
-					explore.event.floor1hotel=4
-					return
-				}
-				if(explore.event.floor1hotel===4) {
-					explore.event.floor1hotel="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.floor1warehouse===0 && player.settings.dialog==="Skip") explore.event.floor1warehouse=14
-				if(explore.event.floor1warehouse===0) {
-					displayCentralRoom()
-					dialog("(The Florroom)","Traveler walked into his room, wondering who had bought it for him.","Unset","#dfdfdf")
-					explore.event.floor1warehouse=1
-					return
-				}
-				if(explore.event.floor1warehouse===1) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1warehouse=2;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Walk around room.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1warehouse===2) {
-					if(maintext!==6361) addLog("[Resource] You found two exquisite cans of drinks inside of chaos spider webs. Who left them here?","#7fff7f")
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1warehouse=3;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Go to bed.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1warehouse===3) {
-					dialog("(The Florroom)","Traveler immediately fell asleep after going to bed. He feels energetic after not sleeping well for a long time, but...","Unset","#dfdfdf")
-					explore.event.floor1warehouse=4
-					if(player.calendar.day<70) player.calendar.day++
-					return
-				}
-				if(explore.event.floor1warehouse===4) {
-					dialog("(The Florroom)","<span style='color: #ff3f3f'>He has never considered about <span style='color: #7fffff'>energy</span>, has he?</span>","Instant","#dfdfdf")
-					explore.event.floor1warehouse=5
-					explore.energy=10000
-					document.getElementById("bar-energy-c").style.opacity=0
-					updateFlowerState()
-					for(let i=0;i<=20;i++) {
-						document.getElementById("bar-energy-c").style.opacity=i/20
-						await delay(100)
-					}
-					explore.event.floor1warehouse=6
-					return
-				}
-				if(explore.event.floor1warehouse===6) {
-					explore.event.floor1warehouse="Completed"
-					document.getElementById("dialog").style.display="none"
-					player.item.add("Epic Rose Juice",2)
-					player.item.add("Triple Web",3)
-					player.book.push("Flower Subsist Guide")
-					addLog("[Resource] You received Flower Subsist Guide.","#7fff7f")
-					animation=false
-					setExplore()
-					setPlayer()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.floor1game===0 && player.settings.dialog==="Skip") explore.event.floor1game=8
-				if(explore.event.floor1game===0) {
-					displayCentralRoom()
-					dialog("(From far distance)","Rock does high damage, it is much better...","Unset","#ffdfff")
-					explore.event.floor1game=1
-					return
-				}
-				if(explore.event.floor1game===1) {
-					dialog("(From far distance)","But why not use stinger? It deals higher damage, and...","Unset","#ffdfff")
-					explore.event.floor1game=2
-					return
-				}
-				if(explore.event.floor1game===2) {
-					dialog("(From far distance)","No! Rock can hit enemy multiple times, it has higher damage.","Unset","#ffdfff")
-					explore.event.floor1game=3
-					return
-				}
-				if(explore.event.floor1game===3) {
-					dialog("(From far distance)","It is too slow. Multiple hits don't mean good average damage.","Unset","#ffdfff")
-					explore.event.floor1game=4
-					return
-				}
-				if(explore.event.floor1game===4) {
-					dialog("(From far distance)","Then what do you use for better damage per turn?","Unset","#ffdfff")
-					explore.event.floor1game=5
-					return
-				}
-				if(explore.event.floor1game===5) {
-					dialog("Traveler (You)","Excuse me. Is there a talent activation device here?","Unset","#dfdfff")
-					explore.event.floor1game=6
-					return
-				}
-				if(explore.event.floor1game===6) {
-					dialog("(From far distance)","Only strong people can use it. If you can defeat me in the debate, I will give you the right to use it. Come find me later.","Unset","#ffdfff")
-					explore.event.floor1game=7
-					return
-				}
-				if(explore.event.floor1game===7) {
-					dialog("(The Florroom)","Traveler walked towards the door. He may need to first understand the content of the debate.","Unset","#dfdfdf")
-					explore.event.floor1game=8
-					return
-				}
-				if(explore.event.floor1game===8) {
-					explore.event.floor1game="Completed"
-					document.getElementById("dialog").style.display="none"
-					player.book.push("Flower Debate Guide")
-					addLog("[Resource] You received Flower Debate Guide.","#7fff7f")
-					player.floor1gamestat=new Array(10).fill("Locked")
-					player.floor1gamestat[1]="Incomplete"
-					animation=false
-					setExplore()
-					setPlayer()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.talentactivation===0 && player.settings.dialog==="Skip") explore.event.talentactivation=6
-				if(explore.event.talentactivation===0) {
-					displayCentralRoom()
-					dialog("Traveler (You)","Finally, I can activate my talents now. My power will be returned!","Unset","#dfdfff")
-					explore.event.talentactivation=1
-					return
-				}
-				if(explore.event.talentactivation===1) {
-					dialog("(The Florroom)","Traveler entered the talent activation device. He felt mysterious power pouring into his body. When he went out, he was stopped by a book promoter.","Unset","#dfdfdf")
-					explore.event.talentactivation=2
-					return
-				}
-				if(explore.event.talentactivation===2) {
-					dialog("Book Promoter?","Hello, we provide a guide for each flower that activates talent. Please accept it!","Unset","#bfffff")
-					explore.event.talentactivation=3
-					return
-				}
-				if(explore.event.talentactivation===3) {
-					dialog("Traveler (You)","Thank you.","Unset","#dfdfff")
-					explore.event.talentactivation=4
-					if(player.book.indexOf("Flower Talent Guide")===-1) {
-						player.book.push("Flower Talent Guide")
-						addLog("[Resource] You received Flower Talent Guide from Book Promoter.","#7fff7f")
-					}
-					return
-				}
-				if(explore.event.talentactivation===4) {
-					dialog("Traveler (You)","Wait... I feel something is off.","Unset","#dfdfff")
-					explore.event.talentactivation=5
-					return
-				}
-				if(explore.event.talentactivation===5) {
-					dialog("Traveler (You)","Did I lose anything? Let me check... Time Shard! He went Ocean!","Unset","#dfdfff")
-					explore.event.talentactivation=6
-					return
-				}
-				if(explore.event.talentactivation===6) {
-					explore.event.talentactivation="Completed"
-					document.getElementById("dialog").style.display="none"
-					player.item.subtract("Time Shard",4)
-					player.talent=new Array()
-					player.talentreset=0
-					addLog("[Resource] You lost 4 pieces of Time Shard...","#7fff7f")
-					explore.event.catchthief="Incomplete"
-					animation=false
-					setExplore()
-					setPlayer()
-					displayCentralRoom()
-					return
-				}
-				if(explore.event.floor1summonerdialog===0 && player.settings.dialog==="Skip") explore.event.floor1summonerdialog=3
-				if(explore.event.floor1summonerdialog===0) {
-					dialog("Traveler (You)","Hello, Summoner!","Unset","#dfdfff")
-					explore.event.floor1summonerdialog=1
-					return
-				}
-				if(explore.event.floor1summonerdialog===1) {
-					dialog("Summoner","Hello! Are you going to have a friendly sparring with me?","Unset","#ffffbf")
-					explore.event.floor1summonerdialog=2
-					return
-				}
-				if(explore.event.floor1summonerdialog===2) {
-					dialog("Traveler (You)","Why not? Let's get started!","Unset","#dfdfff")
-					explore.event.floor1summonerdialog=3
-					return
-				}
-				if(explore.event.floor1summonerdialog===3) {
-					explore.event.floor1summonerdialog="Incomplete"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					return
-				}
-				if(explore.event.floor1summonerdialog===4) {
-					dialog("Summoner","Wow, you are much stronger than before!","Unset","#ffffbf")
-					explore.event.floor1summonerdialog=5
-					return
-				}
-				if(explore.event.floor1summonerdialog===5) {
-					dialog("Traveler (You)","You too. By the way, do you know about Time Shard?","Unset","#dfdfff")
-					explore.event.floor1summonerdialog=6
-					return
-				}
-				if(explore.event.floor1summonerdialog===6) {
-					dialog("Summoner","Not really. Can you give me some information about that?","Unset","#ffffbf")
-					explore.event.floor1summonerdialog=7
-					return
-				}
-				if(explore.event.floor1summonerdialog===7) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1summonerdialog=8;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Provide a vague description.</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1summonerdialog=9;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Give him one.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1summonerdialog===8) {
-					dialog("Traveler (You)","It is very mysterious. It looks like a broken clock, but not exactly like it. When you have it, the passage of time around you slows down. This may slow down the rate of floor collapse.","Unset","#dfdfff")
-					explore.event.floor1summonerdialog=10
-					return
-				}
-				if(explore.event.floor1summonerdialog===9) {
-					if(!player.item.subtract("Time Shard",1)) {
-						dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1summonerdialog=8;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Provide a vague description.</button>","Instant","#dfdfff")
-						return
-					}
-					dialog("Traveler (You)","Here you are.","Unset","#dfdfff")
-					addLog("[Resource] You give away 1 piece of Time Shard.","#7fff7f")
-					explore.event.floor1summonerdialog=11
-					return
-				}
-				if(explore.event.floor1summonerdialog===10) {
-					dialog("Summoner","Thanks. I will keep an eye out for it.","Unset","#ffffbf")
-					explore.event.floor1summonerdialog=13
-					return
-				}
-				if(explore.event.floor1summonerdialog===11) {
-					await dialog("Summoner","Is it... I may have a similar component... Yes, these perfectly match. I don't have much use holding these fragments, just keep them yourself!","Unset","#ffffbf")
-					explore.event.floor1summonerdialog=12
-					player.item.add("Time Shard",2)
-					addLog("[Resource] You received 2 pieces of Time Shard.","#7fff7f")
-					return
-				}
-				if(explore.event.floor1summonerdialog===12) {
-					dialog("Traveler (You)","Thank you so much!","Unset","#dfdfff")
-					explore.event.floor1summonerdialog=13
-					return
-				}
-				if(explore.event.floor1summonerdialog===13) {
-					explore.event.floor1summonerdialog="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					setExplore()
-					return
-				}
-				if(explore.event.floor1exitcentral===0) {
-					displayCentralRoom()
-					dialog("(The Florroom)","Are you sure to exit central room?","Instant","#dfdfdf")
-					explore.event.floor1exitcentral=1
-					return
-				}
-				if(explore.event.floor1exitcentral===1) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1exitcentral=2;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>What's my task?</button><button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1exitcentral=4;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Yes, I'm sure.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1exitcentral===2) {
-					let taskString="<span class='grey'>↓Your have some available tasks↓</span>"
-					if(player.friend.summoner==="Floor 0 complete") taskString+="<br><span class='yellow'>You may try to find the one who has helped you before. Perhaps he is still farming desert.</span>"
-					if(explore.event.catchthief==="Incomplete") taskString+="<br><span class='blue'>Catch the thief who stole your Time Shard. He escaped to ocean, but should not be far away.</span>"
-					if(explore.event.pursuitthief==="Incomplete") taskString+="<br><span class='blue'>You could try to chase the thief, though he would be prepared.</span>"
-					if(taskString==="<span class='grey'>↓Your have some available tasks↓</span>") taskString="<span class='dgreen'>You have no available task currently!</span>"
-					dialog("(The Florroom)",taskString,"Instant","#dfdfdf")
-					explore.event.floor1exitcentral=3
-					return
-				}
-				if(explore.event.floor1exitcentral===3) {
-					dialog("Traveler (You)","<button type='button' tabindex='-1' onclick='event.stopPropagation();explore.event.floor1exitcentral=4;dialog(\"Skip\")' class='llmargin white-bg srecbtn pointer'>Ok, I'm sure now.</button>","Instant","#dfdfff")
-					return
-				}
-				if(explore.event.floor1exitcentral===4) {
-					explore.event.floor1exitcentral="Completed"
-					document.getElementById("dialog").style.display="none"
-					animation=false
-					explore.explored[10]=true
-					setExplore()
-					displayMapItem()
-					displayMap()
-					return
-				}
-				if(explore.event.floor1ending===0 && player.settings.dialog==="Skip") {
-					document.getElementById("end1").style["pointer-events"]="unset"
-					for(let i=0;i<=30;i++) {
-						document.getElementById("end1").style.opacity=i/30
-						if(i===15) {
-							document.getElementById("dialog").style.display="none"
-							animation=false
-						}
-						await delay(100)
-					}
-					location.reload()
-					return
-				}
-				if(explore.event.floor1ending===0) {
-					dialog("(The Florroom)","Traveler defeated all guardians. The Jungle Gate opens, as expected.","Unset","#dfdfdf")
-					explore.event.floor1ending=1
-					return
-				}
-				if(explore.event.floor1ending===1) {
-					dialog("(The Florroom)","He walked up the steps leading to Floor 2.","Unset","#dfdfdf")
-					explore.event.floor1ending=2
-					return
-				}
-				if(explore.event.floor1ending===2) {
-					dialog("(The Florroom)","He walked and continue walking.","Unset","#dfdfdf")
-					explore.event.floor1ending=3
-					return
-				}
-				if(explore.event.floor1ending===3) {
-					dialog("(The Florroom)","But this time, there is a door, a sturdy iron gate.","Unset","#dfdfdf")
-					explore.event.floor1ending=4
-					return
-				}
-				if(explore.event.floor1ending===4) {
-					dialog("(The Florroom)","He walked up and knocks on the door. There is no response.","Unset","#dfdfdf")
-					explore.event.floor1ending=5
-					clearAllInterval()
-					return
-				}
-				if(explore.event.floor1ending===5) {
-					dialog("(The Florroom)","He feels that time is freezing.","Unset","#dfdfdf")
-					explore.event.floor1ending=6
-					return
-				}
-				if(explore.event.floor1ending===6) {
-					dialog("(The Florroom)","He is trapped here.","Unset","#dfdfdf")
-					explore.event.floor1ending=7
-					document.getElementById("calendar-day").setAttribute("class","grey")
-					document.getElementById("calendar-day").innerHTML="Day &("
-					return
-				}
-				if(explore.event.floor1ending===7) {
-					dialog("(The Florroom)","He is trapped here.Forever.","Instant","#dfdfdf")
-					explore.event.floor1ending=8
-					document.getElementById("calendar-hour").setAttribute("class","grey")
-					document.getElementById("calendar-hour").innerHTML="&("
-					return
-				}
-				if(explore.event.floor1ending===8) {
-					dialog("(The Florroom)","He is trapped here.Forever.ETERNAL","Instant","#dfdfdf")
-					explore.event.floor1ending="Completed"
-					document.getElementById("calendar-minute").setAttribute("class","grey")
-					document.getElementById("calendar-minute").innerHTML="&("
-					document.getElementById("end1").style["pointer-events"]="unset"
-					for(let i=0;i<=30;i++) {
-						document.getElementById("end1").style.opacity=i/30
-						if(i===15) {
-							document.getElementById("dialog").style.display="none"
-							animation=false
-						}
-						await delay(100)
-					}
-					location.reload()
 					return
 				}
 				return
@@ -5013,12 +3846,10 @@
 			}
 		}
 		let EndingList=new Object()
-//		EndingList.beta="<h2>The Journey Conquered</h2><span>You have completed Base Floor. Congratulations!</span><br><span>This is the entire content of Florroom Rewritten BETA.</span><span>More content will be released soon, stay tuned!</span><br><span class='dbrown bold'>↓↓This game is so balanced that I want to play again↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='hardReset()'>Here we go again?</button>"
-		EndingList.beta2="<h2>The Journey Conquered</h2><span>You have completed Floor 1. Congratulations!</span><br><span>This is the entire content of current version.</span><span>More content will be released soon, stay tuned!</span><br><span class='dbrown bold'>↓↓This game is so balanced that I want to play again↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='hardReset()'>Here we go again?</button>"
-		EndingList.collapse1="<h2>The Journey Halted</h2><span>It is Day 80, and Base Floor has collapsed.</span><br><span>You made much contributions to the exploration of Florroom</span><span>during your lifetime. Flowers will always remember you.</span><br><span class='dbrown bold'>↓↓I'm sure I could have finished it faster. Let's try again.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='hardReset()'>Here we go again?</button>"
-		EndingList.collapse2="<h2>The Journey Halted</h2><span>It is Day 80, and Floor 1 has collapsed.</span><br><span>You made much contributions to the exploration of Florroom</span><span>during your lifetime. Flowers will always remember you.</span><br><span class='dbrown bold'>↓↓I'm sure I could have gone further. Let's try again.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='hardReset()'>Here we go again?</button>"
-		EndingList.exhaust1="<h2>The Journey Halted</h2><span>You felt your eyes darken and then faint, in Floor 1.</span><br><span>You made much contributions to the exploration of Florroom</span><span>during your lifetime. Flowers will always remember you.</span><br><span class='dbrown bold'>↓↓I'm sure I am fully prepared now. Let's try again.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='hardReset()'>Here we go again?</button>"
-		EndingList.rift="<h2>The Journey Halted</h2><span>You fell into a rift and failed to escape.</span><br><span>You are only one step away from the next Floor. As long as you get there...</span><br><span>The rift... Is the cost behind this worth it?</span><br><span class='dbrown bold'>↓↓I have firmly established my will. Let's try again.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='hardReset()'>Here we go again?</button>"
+		EndingList.april="<h2>The Journey Conquered</h2><span>You have completed Floor 1. Congratulations!</span><br><span>This is the entire content of current version.</span><span>More content will not be released soon, go away!</span><br><span class='dbrown bold'>↓↓This game is so unbalanced that I want to gain a prestige point↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='prestige()'>Here we go again?</button>"
+		EndingList.aprilcollapse1="<h2>The Journey Halted</h2><span>It is Day )))), and Base Floor has collapsed.</span><br><span>You made much contributions to the exploration of Florroom</span><span>during your lifetime. Flowers will always remember you.</span><br><span class='dbrown bold'>↓↓I'm sure I could have a prestige point because why not.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='prestige()'>Here we go again?</button>"
+		EndingList.aprilcollapse2="<h2>The Journey Halted</h2><span>It is Day )))), and Floor 1 has collapsed.</span><br><span>You made much contributions to the exploration of Florroom</span><span>during your lifetime. Flowers will always remember you.</span><br><span class='dbrown bold'>↓↓I'm sure I could have a prestige point because why not.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='prestige()'>Here we go again?</button>"
+		EndingList.aprilexhaust1="<h2>The Journey Halted</h2><span>You felt your eyes darken and then faint, in Floor 1.</span><br><span>You made much contributions to the exploration of Florroom</span><span>during your lifetime. Flowers will always remember you.</span><br><span class='dbrown bold'>↓↓I'm sure I could have a prestige point because why not.↓↓</span><br><button type='button' tabindex='-1' id='endgame3' onclick='prestige()'>Here we go again?</button>"
 		async function endGameDisplay() {
 			document.getElementById("endgame1").style.display="unset"
 			document.getElementById("endgame2").style.display="flex"
@@ -5031,27 +3862,22 @@
 		}
 		function gameEnded() {
 			if(explore.flowerspot===10 && explore.floor===2) {
-				document.getElementById("endgame2").innerHTML=EndingList.beta2
+				document.getElementById("endgame2").innerHTML=EndingList.april
 				endGameDisplay()
 				return true
 			}
-			if((player.calendar.second>=5 && explore.floor===0 && player.calendar.day===79) || player.calendar.day>=80) {
-				document.getElementById("endgame2").innerHTML=EndingList.collapse1
+			if(explore.floor===0 && player.calendar.day<=0) {
+				document.getElementById("endgame2").innerHTML=EndingList.aprilcollapse1
 				endGameDisplay()
 				return true
 			}
-			if((player.calendar.second>=5 && explore.floor===1 && player.calendar.day===79) || player.calendar.day>=80) {
-				document.getElementById("endgame2").innerHTML=EndingList.collapse2
+			if(explore.floor===1 && player.calendar.day<=0) {
+				document.getElementById("endgame2").innerHTML=EndingList.aprilcollapse2
 				endGameDisplay()
 				return true
 			}
 			if(explore.energy<3600) {
-				document.getElementById("endgame2").innerHTML=EndingList.exhaust1
-				endGameDisplay()
-				return true
-			}
-			if(fight.hasOwnProperty("riftfight")) {
-				document.getElementById("endgame2").innerHTML=EndingList.rift
+				document.getElementById("endgame2").innerHTML=EndingList.aprilexhaust1
 				endGameDisplay()
 				return true
 			}
@@ -5059,24 +3885,17 @@
 		}
 		function endFloor(previousFloor) {
 			if(previousFloor===0) {
-				delete player.item["Energy Drink"]
-				delete player.item.Arrow
+				player.book.push("Flower Talent Guide")
+				player.talent=new Array()
+				explore.energy=10000
 			}
 			delete player.memory
 			delete player.calendar.reset
-			if(player.hasOwnProperty("talent")) player.talent=new Array()
 			if(player.hasOwnProperty("talentreset")) player.talentreset=0
 			setPlayer()
-			if(previousFloor===0) {
-				explore.event=new Object()
-				explore.event.basefloorending=0
-				dialog("Skip")
-			}
-			if(previousFloor===1) {
-				explore.event=new Object()
-				explore.event.floor1ending=0
-				dialog("Skip")
-			}
+			explore.event=new Object()
+			setExplore()
+			safeReload()
 		}
 	</script>
 	<script>
@@ -5085,7 +3904,7 @@
 			mouseX=mouse.clientX
 			mouseY=mouse.clientY
 		} )
-		const version=20260327,acceptedVersion=20260210
+		const version=20260401
 		const svgNS="http://www.w3.org/2000/svg"
 		const dx=[0,0,1,0,-1],dy=[0,-1,0,1,0],dx5=[0,1,2,2,1,-1,-2,-2,-1],dy5=[0,-2,-1,1,2,2,1,-1,-2]
 		let rarityColor=["#000000","#7eef6d","#ffe65d","#4d52e3","#861fde","#de1f1f","#1fdbde","#ff2b75","#2bffa3","#555555"]
@@ -5094,23 +3913,23 @@
 		const mapArray=[10,11,12,13,14,15,16,17,21,22,23,24,25,26,31,32,33,34,35,36,37,38,39,41,42,43,44,51,52,53,54,55,56,61,62,63,64,65,66,67]
 		const pathArray=[1011,1013,1112,1121,1131,1213,1214,1241,1314,1315,1416,1451,1516,1517,1617,1724,1739,2122,2224,2225,2226,2324,2325,2353,2461,2526,3132,3133,3233,3236,3239,3334,3335,3436,3438,3537,3538,3639,3738,3761,3943,4142,4243,4244,4344,5152,5153,5253,5354,5355,5455,5556,5664,6162,6263,6265,6364,6365,6466,6566,6667]
 		const tutorialOrder=[10,11,12,14,21,22,24,31,41,42,43,51,52,53,23,61,62,63,64,65,66,67]
-		let userVersion=JSON.parse(localStorage.getItem("FLORROOMuserVersion"))
-		if(!userVersion) userVersion=version
-		localStorage.setItem("FLORROOMuserVersion",JSON.stringify(userVersion))
-		let player=JSON.parse(localStorage.getItem("FLORROOMplayer"))
-		let explore=JSON.parse(localStorage.getItem("FLORROOMexplore"))
-		let fight=JSON.parse(localStorage.getItem("FLORROOMfight"))
+		let userVersion=JSON.parse(localStorage.getItem("FLORROOMapriluserVersion"))
+		if(!userVersion) userVersion=20260332
+		localStorage.setItem("FLORROOMapriluserVersion",JSON.stringify(userVersion))
+		let player=JSON.parse(localStorage.getItem("FLORROOMaprilplayer"))
+		let explore=JSON.parse(localStorage.getItem("FLORROOMaprilexplore"))
+		let fight=JSON.parse(localStorage.getItem("FLORROOMaprilfight"))
 		if(!player) player=new Object()
 		if(!explore) explore=new Object()
 		if(!fight) fight=new Object()
 		function setPlayer() {
-			localStorage.setItem("FLORROOMplayer",JSON.stringify(player))
+			localStorage.setItem("FLORROOMaprilplayer",JSON.stringify(player))
 		}
 		function setExplore() {
-			localStorage.setItem("FLORROOMexplore",JSON.stringify(explore))
+			localStorage.setItem("FLORROOMaprilexplore",JSON.stringify(explore))
 		}
 		function setFight() {
-			localStorage.setItem("FLORROOMfight",JSON.stringify(fight))
+			localStorage.setItem("FLORROOMaprilfight",JSON.stringify(fight))
 		}
 		if(!player.book) {
 			player.book=new Array()
@@ -5149,10 +3968,10 @@
 			player.bookstat.artisan.rarityupsuccessvariance=0
 		}
 		if(!player.calendar) player.calendar=new Object()
-		if(!player.calendar.day) player.calendar.day=40
-		if(!player.calendar.hour) player.calendar.hour=1
-		if(!player.calendar.minute) player.calendar.minute=1
-		if(!player.calendar.second) player.calendar.second=0
+		if(!player.calendar.hasOwnProperty("day")) player.calendar.day=40
+		if(!player.calendar.hasOwnProperty("hour")) player.calendar.hour=1
+		if(!player.calendar.hasOwnProperty("minute")) player.calendar.minute=1
+		if(!player.calendar.hasOwnProperty("second")) player.calendar.second=0
 		if(!player.calendar.reset) {
 			player.calendar.reset=true
 			if(explore.floor===1) {
@@ -5229,6 +4048,7 @@
 		if(!explore.highest) explore.highest=100*explore.floor+explore.flowerspot
 		if(!explore.explored) explore.explored=new Object()
 		for(let i in mapArray) if(!explore.explored[mapArray[i]]) explore.explored[mapArray[i]]=false
+		explore.explored[10]=true
 		if(!explore.floorboss) {
 			explore.floorboss=new Array()
 			for(let i=0;i<3;i++) explore.floorboss[i]=roll(1,15)
@@ -5245,12 +4065,11 @@
 		if(!fight.petal) fight.petal=new Array()
 		for(let i in fight.petal) fight.petal[i]=Object.assign(new Petal(),fight.petal[i])
 		if(!fight.mob) fight.mob=new Array()
-		for(let i in fight.mob) fight.mob[i]=Object.assign(new Mob(),fight.mob[i])
+		for(let i in fight.mob) fight.mob[i]=Object.assign(new Mob(),fight.mob[i],{rock:fight.mob[i].rock})
 		if(!fight.spawnmob) fight.spawnmob=new Array()
-		for(let i in fight.spawnmob) fight.spawnmob[i]=Object.assign(new Mob(),fight.spawnmob[i])
+		for(let i in fight.spawnmob) fight.spawnmob[i]=Object.assign(new Mob(),fight.spawnmob[i],{rock:fight.spawnmob[i].rock})
 		if(!fight.missile) fight.missile=new Array()
-		for(let i in fight.missile) fight.missile[i]=Object.assign(new Mob(),fight.missile[i])
-		delete fight.spevent
+		for(let i in fight.missile) fight.missile[i]=Object.assign(new Mob(),fight.missile[i],{rock:fight.missile[i].rock})
 		if(!fight.rift) fight.rift=new Object()
 		if(!fight.rift.open) fight.rift.open=false
 		if(!fight.riftmob) fight.riftmob=new Array()
@@ -5419,33 +4238,6 @@
 			if(document.getElementById("gridinfo").style.display==="none") return
 			if(fight.ready && fight.turn==="Mob") return
 			let buttonValue=parseInt(button.value),buttonX=parseInt(button.getAttribute("data-x")),buttonY=parseInt(button.getAttribute("data-y"))
-			if(fight.hasOwnProperty("spevent")) {
-				if(fight.spevent.event>=101 && fight.spevent.event<=109 && buttonValue===0 && buttonY===6 && buttonX%3!==0) {
-					if(selectedGrid.select===true && selectedGrid.value===buttonValue && selectedGrid.x===buttonX && selectedGrid.y===buttonY) {
-						selectedGrid.select=false
-						closeGridInfo()
-						gridInfo(button)
-					} else {
-						if(selectedGrid.select===true) {
-							selectedGrid.select=false
-							closeGridInfo()
-						}
-						gridInfo(button)
-						selectedGrid.select=true
-						selectedGrid.value=buttonValue
-						selectedGrid.x=buttonX
-						selectedGrid.y=buttonY
-						document.getElementById("gridinfo").children[0].innerHTML="(Selected) "+document.getElementById("gridinfo").children[0].innerHTML
-						let option=document.createElement("div")
-						option.innerHTML+="<button type='button' id='keyx-btn' onclick='playCard("+buttonX+")' class='llmargin lgrey-bg srecbtn pointer'>[X] Play</button>"
-						if(option.innerHTML!=="") {
-							document.getElementById("gridinfo").appendChild(option)
-							document.getElementById("gridinfo").innerHTML+="<br>"
-						}
-					}
-				}
-				return
-			}
 			if(lupoper.active===true) {
 				let targetPetal=player.inventory[lupoper.selectedArray[0]].clone()
 				if(player.inventory[buttonX].id===targetPetal.id && player.inventory[buttonX].rarity===targetPetal.rarity && player.inventory[buttonX].level===targetPetal.level) {
@@ -5684,9 +4476,9 @@
 			if(100*Math.random()<=chance) result=true
 			if(log) {
 				if(result) {
-					addLog("[Determine] True ("+betterFloor(chance)+"%)"+logText,"#3f3f3f")
+					addLog("[Determine] True (Chance%)"+logText,"#3f3f3f")
 				} else {
-					addLog("[Determine] False ("+(100-betterFloor(chance))+"%)"+logText,"#3f3f3f")
+					addLog("[Determine] False (Chance%)"+logText,"#3f3f3f")
 				}
 			}
 			return result
@@ -6318,165 +5110,135 @@
 			if(animation) return
 			if(setX===1 && setY===1) {
 				if(!player.settings.hasOwnProperty("closehelplog")) {
-					cleanLog()
 					player.settings.closehelplog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closehelplog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===2 && setY===1) {
 				if(!player.settings.hasOwnProperty("closecommandlog")) {
-					cleanLog()
 					player.settings.closecommandlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closecommandlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===3 && setY===1) {
 				if(!player.settings.hasOwnProperty("closechatlog")) {
-					cleanLog()
 					player.settings.closechatlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closechatlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===4 && setY===1) {
 				if(!player.settings.hasOwnProperty("closewarninglog")) {
-					cleanLog()
 					player.settings.closewarninglog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closewarninglog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===5 && setY===1) {
 				if(!player.settings.hasOwnProperty("closecodelog")) {
-					cleanLog()
 					player.settings.closecodelog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closecodelog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===6 && setY===1) {
 				if(!player.settings.hasOwnProperty("closecalculatorlog")) {
-					cleanLog()
 					player.settings.closecalculatorlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closecalculatorlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===7 && setY===1) {
 				if(!player.settings.hasOwnProperty("closebotlog")) {
-					cleanLog()
 					player.settings.closebotlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closebotlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===8 && setY===1) {
 				if(!player.settings.hasOwnProperty("closepetallog")) {
-					cleanLog()
 					player.settings.closepetallog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closepetallog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===9 && setY===1) {
 				if(!player.settings.hasOwnProperty("closemoblog")) {
-					cleanLog()
 					player.settings.closemoblog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closemoblog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===10 && setY===1) {
 				if(!player.settings.hasOwnProperty("closeflowerlog")) {
-					cleanLog()
 					player.settings.closeflowerlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closeflowerlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===11 && setY===1) {
 				if(!player.settings.hasOwnProperty("closeturnlog")) {
-					cleanLog()
 					player.settings.closeturnlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closeturnlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===12 && setY===1) {
 				if(!player.settings.hasOwnProperty("closedeterminelog")) {
-					cleanLog()
 					player.settings.closedeterminelog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closedeterminelog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===13 && setY===1) {
 				if(!player.settings.hasOwnProperty("closeresourcelog")) {
-					cleanLog()
 					player.settings.closeresourcelog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closeresourcelog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===14 && setY===1) {
 				if(!player.settings.hasOwnProperty("closelootlog")) {
-					cleanLog()
 					player.settings.closelootlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closelootlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
 			}
 			if(setX===15 && setY===1) {
 				if(!player.settings.hasOwnProperty("closecraftlog")) {
-					cleanLog()
 					player.settings.closecraftlog=true
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"Off"))
 				} else {
-					cleanLog()
 					delete player.settings.closecraftlog
 					getGrid(5,setX,setY).replaceWith(settingButton(setX,setY,"On"))
 				}
@@ -6585,9 +5347,6 @@
 				openInventory(false)
 				return
 			}
-			if(fight.hasOwnProperty("spevent")) {
-				return
-			}
 			if(!open) {
 				selectedGrid.select=false
 				closeGridInfo()
@@ -6654,14 +5413,14 @@
 				encodedstr+=String.fromCharCode(65+encodeValue%26)
 			}
 			for(let i=0;i<encodedstr.length;i++) {
-				encodedstr[i]=String.fromCharCode(65+(encodedstr[i].charCodeAt()-65+betterFloor((i+1)/(encodedstr.length+1)*354233654))%26)
+				encodedstr=encodedstr.slice(0,i)+String.fromCharCode(65+(encodedstr[i].charCodeAt()+65+betterFloor((i+1)/(encodedstr.length+1)*354233654)%26)%26)+encodedstr.slice(i+1)
 			}
 			return encodedstr
 		}
 		function decodeFile(encodedstr) {
 			let savestr=""
 			for(let i=0;i<encodedstr.length;i++) {
-				encodedstr[i]=String.fromCharCode(65+(encodedstr[i].charCodeAt()-65-betterFloor((i+1)/(encodedstr.length+1)*354233654))%26)
+				encodedstr=encodedstr.slice(0,i)+String.fromCharCode(65+(encodedstr[i].charCodeAt()+65-betterFloor((i+1)/(encodedstr.length+1)*354233654)%26)%26)+encodedstr.slice(i+1)
 			}
 			for(let i=0;i<encodedstr.length/3;i++) {
 				let encodeValue=(encodedstr[3*i].charCodeAt()-65)*676+(encodedstr[3*i+1].charCodeAt()-65)*26+(encodedstr[3*i+2].charCodeAt()-65)
@@ -6699,9 +5458,9 @@
 							return
 						}
 						clearAllInterval()
-						localStorage.setItem("FLORROOMplayer",JSON.stringify(savefile.player))
-						localStorage.setItem("FLORROOMexplore",JSON.stringify(savefile.explore))
-						localStorage.setItem("FLORROOMfight",JSON.stringify(savefile.fight))
+						localStorage.setItem("FLORROOMaprilplayer",JSON.stringify(savefile.player))
+						localStorage.setItem("FLORROOMaprilexplore",JSON.stringify(savefile.explore))
+						localStorage.setItem("FLORROOMaprilfight",JSON.stringify(savefile.fight))
 						document.getElementById("end1").style["pointer-events"]="unset"
 						for(let i=0;i<=10;i++) {
 							document.getElementById("end1").style.opacity=i/10
@@ -6728,9 +5487,9 @@
 			let downloadElement=document.createElement("a")
 			downloadElement.href=URL.createObjectURL(blob)
 			if(player.memory===0) {
-				downloadElement.download="broken memory.txt"
+				downloadElement.download="broken April Fool.txt"
 			} else {
-				downloadElement.download="memory.txt"
+				downloadElement.download="April Fool.txt"
 			}
 			downloadElement.click()
 			document.getElementById("export-btn").innerHTML="Memories Stored!"
@@ -6739,59 +5498,18 @@
 			if(player.hasOwnProperty("memory")) document.getElementById("export-btn").innerHTML+=" ("+player.memory+")"
 			animation=false
 		}
-		async function hardReset() {
+		async function prestige() {
 			if(animation) return
-			let getResetSentence=prompt("Are you sure to reset the game and lost all process?\nType 'The game is perfect, there are no bugs' to confirm.")
-			if(getResetSentence!=="The game is perfect, there are no bugs") return
-			clearAllInterval()
-			for(let i=0;i<=50;i++) {
-				document.getElementById("end1").style.opacity=i/50
-				await delay(100)
-			}
-			document.getElementById("end1").style["pointer-events"]="unset"
-			let saveSettings=player.settings
-			player=new Object()
-			player.settings=saveSettings
-			setPlayer()
-			localStorage.removeItem("FLORROOMexplore")
-			localStorage.removeItem("FLORROOMfight")
-			userVersion=version
-			localStorage.setItem("FLORROOMuserVersion",JSON.stringify(userVersion))
-			document.getElementById("end2").innerText="The story of the Florroom continues..."
-			for(let i=0;i<=20;i++) {
-				document.getElementById("end2").style.opacity=i/20
-				await delay(100)
-			}
-			await delay(1000)
-			for(let i=0;i<=20;i++) {
-				document.getElementById("end2").style.opacity=1-i/20
-				await delay(100)
-			}
-			document.getElementById("end2").innerText="Forever."
-			for(let i=0;i<=20;i++) {
-				document.getElementById("end2").style.opacity=i/20
-				await delay(100)
-			}
-			await delay(2000)
-			for(let i=0;i<=20;i++) {
-				document.getElementById("end2").style.opacity=1-i/20
-				await delay(100)
-			}
-			await delay(3000)
 			location.reload()
 		}
 		function updateVersion(reset) {
 			if(reset===false) {
-				if(userVersion<acceptedVersion) {
-					document.getElementById("version3").innerHTML="Your version is too outdated..."
-					return
-				}
 				userVersion=version
-				localStorage.setItem("FLORROOMuserVersion",JSON.stringify(userVersion))
+				localStorage.setItem("FLORROOMapriluserVersion",JSON.stringify(userVersion))
 				location.reload()
 			}
 			if(reset===true) {
-				hardReset()
+				prestige()
 			}
 		}
 		function updateGame() {
@@ -6962,10 +5680,6 @@
 			}
 			if(num===11) {
 				if(cornerDisplay()) return
-				if(fight.hasOwnProperty("spevent")) {
-					document.getElementById("fight-t-btn").onclick()
-					return
-				}
 				if(!fight.active) return
 				document.getElementById("fight-t-btn").onclick()
 				return
@@ -7113,7 +5827,6 @@
 					}
 					let validArray=new Array()
 					for(let i=1;i<=8;i++) for(let j=1;j<=6;j++) if(getGrid(0,i,j).children[0].innerHTML!=="Empty") {
-						if(fight.hasOwnProperty("spevent") && fight.spevent.event>=101 && fight.spevent.event<=109 && j>1 && j<6) continue
 						validArray.push({x:i,y:j})
 					}
 					if(validArray.length===0) return
@@ -7284,9 +5997,7 @@
 			}
 			document.getElementById("end1").style["pointer-events"]="none"
 			animation=false
-			if(!explore.explored[10]) {
-				displayCentralRoom()
-			} else if(fight.active===true) {
+			if(fight.active===true) {
 				displayFightField()
 				displayFight()
 				if(explore.floor>=1) explore.energy=fight.energy
@@ -7299,10 +6010,6 @@
 			document.getElementById("flower-effect").style.bottom="35px"
 			updateFlowerState()
 			addLog("Use .help for command information!")
-			if(explore.event.evolutionaryguide===1) dialog("Skip")
-			if(explore.event.evolutionaryguide===3) dialog("Skip")
-			if(explore.event.artisanguide===1) dialog("Skip")
-			if(explore.event.artisanguide===3) dialog("Skip")
 		}
 		let selectedGrid=new Object()
 		selectedGrid.select=false
@@ -7314,72 +6021,48 @@
 			if(timePassed<tickTime) return
 			if(updatingCalendar) return
 			updatingCalendar=true
-			player.calendar.second+=betterFloor(timePassed/tickTime)
+			player.calendar.second-=betterFloor(timePassed/tickTime)
 			player.calendar.start+=betterFloor(timePassed/tickTime)*tickTime
 			let calendarFlag=true
 			while(calendarFlag) {
 				calendarFlag=false
-				if(player.calendar.second>0 && player.calendar.minute<=79) {
-					player.calendar.second--
-					player.calendar.minute++
+				if(player.calendar.second<0 && player.calendar.minute>=1) {
+					player.calendar.second++
+					player.calendar.minute--
 					calendarFlag=true
 				}
-				if(player.calendar.minute>79 && player.calendar.hour<79) {
-					player.calendar.minute=1
-					player.calendar.hour++
+				if(player.calendar.minute<1 && player.calendar.hour>=1) {
+					player.calendar.minute=79
+					player.calendar.hour--
 					calendarFlag=true
 				}
-				if(player.calendar.day<79 && player.calendar.hour===79 && player.calendar.minute===80) {
-					player.calendar.second+=120
+				if(player.calendar.hour<1) {
+					player.calendar.hour=79
+					player.calendar.day--
 					calendarFlag=true
 				}
-				if(player.calendar.second>=120 && player.calendar.hour===79 && player.calendar.minute===80) {
-					player.calendar.second=0
-					player.calendar.minute=1
-					player.calendar.hour=1
-					player.calendar.day++
-					document.getElementById("end1").style.opacity=0
-					document.getElementById("end1").style["pointer-events"]="none"
-					calendarFlag=true
-				}
-				if(player.calendar.second>0 && player.calendar.minute===80) {
-					document.getElementById("end1").style["pointer-events"]="unset"
-					if(player.calendar.second<=5) document.getElementById("end1").style.opacity=0.2*player.calendar.second
-					if(player.calendar.second>=115) document.getElementById("end1").style.opacity=0.2*(120-player.calendar.second)
-					if(player.calendar.second===10) document.getElementById("end2").innerText="Sleeping..."
-					if(player.calendar.second>10 && player.calendar.second<=20) document.getElementById("end2").style.opacity=0.1*(player.calendar.second-10)
-					if(player.calendar.second>=100 && player.calendar.second<110) document.getElementById("end2").style.opacity=0.1*(110-player.calendar.second)
-					if(player.calendar.second===110) document.getElementById("end2").innerText=""
-					if(player.calendar.second===5 && fight.active) {
-						setPlayer()
-						location.reload()
-					}
-					if(player.calendar.second===5 && explore.floor===0 && player.calendar.day>=79) {
-						setPlayer()
-						location.reload()
-					}
-					if(player.calendar.second===5 && explore.floor===1 && player.calendar.day>=79) {
-						setPlayer()
-						location.reload()
-					}
+				if(player.calendar.day<1) {
+					setPlayer()
+					location.reload()
+					return
 				}
 			}
-			if(player.calendar.day<70) {
+			if(player.calendar.day>10) {
 				document.getElementById("calendar-day").setAttribute("class","green")
-			} else if(player.calendar.day<77) {
+			} else if(player.calendar.day>5) {
 				document.getElementById("calendar-day").setAttribute("class","yellow")
-			} else if(player.calendar.day<79) {
+			} else if(player.calendar.day>0) {
 				document.getElementById("calendar-day").setAttribute("class","red")
 			} else {
 				document.getElementById("calendar-day").setAttribute("class","grey")
 			}
-			if(player.calendar.hour<=50) {
+			if(player.calendar.hour>=30) {
 				document.getElementById("calendar-hour").setAttribute("class","green")
 				document.getElementById("calendar-minute").setAttribute("class","green")
-			} else if(player.calendar.hour<=70) {
+			} else if(player.calendar.hour>=10) {
 				document.getElementById("calendar-hour").setAttribute("class","yellow")
 				document.getElementById("calendar-minute").setAttribute("class","yellow")
-			} else if(player.calendar.minute<=79) {
+			} else if(player.calendar.minute>=1) {
 				document.getElementById("calendar-hour").setAttribute("class","red")
 				document.getElementById("calendar-minute").setAttribute("class","red")
 			} else {
@@ -7579,41 +6262,7 @@
 				return
 			}
 			if(distance(explore.flowerspot,spotValue)===-1) return
-			if(spotValue===explore.flowerspot) {
-				if(explore.floor===0 && explore.flowerspot===11 && explore.event.hasOwnProperty("evolutionaryguide") && explore.event.evolutionaryguide!=="Completed") {
-					setExplore()
-					startFight()
-					return
-				}
-				if(explore.floor===0 && explore.flowerspot===21 && explore.event.hasOwnProperty("artisanguide") && explore.event.artisanguide!=="Completed") {
-					setExplore()
-					startFight()
-					return
-				}
-				if(explore.floor===1 && explore.flowerspot===10) {
-					explore.explored[10]=false
-					delete explore.event.floor1exitcentral
-					displayCentralRoom()
-					setExplore()
-					return
-				}
-				if(explore.floor===1 && explore.flowerspot===22 && explore.explored[22]===true && player.friend.summoner==="Floor 0 complete") {
-					setExplore()
-					startFight()
-					return
-				}
-				if(explore.floor===1 && explore.flowerspot===31 && explore.explored[31]===true && explore.event.catchthief==="Incomplete") {
-					setExplore()
-					startFight()
-					return
-				}
-				if(explore.floor===1 && explore.flowerspot===33 && explore.explored[33]===true && explore.event.pursuitthief==="Incomplete") {
-					setExplore()
-					startFight()
-					return
-				}
-				return
-			}
+			if(spotValue===explore.flowerspot) return
 			travel(spotValue)
 		}
 		function mapInfo(spot) {
@@ -7626,7 +6275,7 @@
 			let mapInfoTitleColor=["#000000","#9fdf9f","#dfdf7f","#7f7fdf","#9f3f3f","#9f3f3f","#3f9f3f"]
 			let editingMapHTML="<h3 style='color: "+mapInfoTitleColor[betterFloor(spotValue/10)]+"'>"+MapNameList[spotValue]+"</h3>"
 			if(spotValue===67) {
-				for(let i=0;i<3;i++) editingMapHTML+="<span>Boss "+(i+1)+": "+MobNameList[100+explore.floorboss[i]]+"</span>"
+				for(let i=0;i<3;i++) editingMapHTML+="<span>Boss "+(i+1)+": It is a boss.</span>"
 			} else if(explore.explored[spotValue]) {
 				editingMapHTML+="<span>You already cleared this spot.</span>"
 			} else {
@@ -7640,24 +6289,6 @@
 			editingMapHTML+="<br>"
 			if(distance(explore.flowerspot,spotValue)>0) {
 				editingMapHTML+="<span>Spot Distance: "+distance(explore.flowerspot,spotValue)+"</span><br>"
-			}
-			if(explore.floor===0 && spotValue===11 && explore.event.hasOwnProperty("evolutionaryguide") && explore.event.evolutionaryguide!=="Completed") {
-				editingMapHTML+="<span style='color: #bf7fbf; font-weight: bold'>Special Event: You noticed a book under a boulder...</span><br>"
-			}
-			if(explore.floor===0 && spotValue===21 && explore.event.hasOwnProperty("artisanguide") && explore.event.artisanguide!=="Completed") {
-				editingMapHTML+="<span style='color: #bf7fbf; font-weight: bold'>Special Event: You remembered the words on book...</span><br>"
-			}
-			if(explore.floor===1 && spotValue===10) {
-				editingMapHTML+="<span style='color: #bf7fbf; font-weight: bold'>Special Event: Go back to central room.</span><br>"
-			}
-			if(explore.floor===1 && spotValue===22 && explore.explored[22]===true && player.friend.summoner==="Floor 0 complete") {
-				editingMapHTML+="<span style='color: #bf7fbf; font-weight: bold'>Special Event: You see a flower wandering with some beetles...</span><br>"
-			}
-			if(explore.floor===1 && spotValue===31 && explore.explored[31]===true && explore.event.catchthief==="Incomplete") {
-				editingMapHTML+="<span style='color: #bf7fbf; font-weight: bold'>Special Event: You see someone running away...</span><br>"
-			}
-			if(explore.floor===1 && spotValue===33 && explore.explored[33]===true && explore.event.pursuitthief==="Incomplete") {
-				editingMapHTML+="<span style='color: #bf7fbf; font-weight: bold'>Special Event: You see someone running away, again.</span><br>"
 			}
 			document.getElementById("mapinfo").innerHTML=editingMapHTML
 			document.getElementById("mapinfo").style.display="flex"
@@ -7839,47 +6470,6 @@
 			if(grid.style.scale>0 && grid.style.scale<1) return
 			let gridValue=parseInt(grid.getAttribute("value")),gridX=parseInt(grid.dataset.x),gridY=parseInt(grid.dataset.y)
 			if(gridValue>6000) return
-			if(fight.hasOwnProperty("spevent")) {
-				if(fight.spevent.event>=101 && fight.spevent.event<=109 && gridValue===0) {
-					document.getElementById("gridinfo").style.left=grid.getBoundingClientRect().left+40+"px"
-					if(gridY===1 && gridX%3===0) {
-						document.getElementById("gridinfo").style.setProperty("--transform2","translate(0%,50%)")
-						document.getElementById("gridinfo").style.top=grid.getBoundingClientRect().bottom+10+"px"
-						let editingGridCardHTML="<h3>Your opponent</h3>"
-						editingGridCardHTML+="<span>Momentum: "+fight.spevent.opponentmomentum+"</span><br>"
-						document.getElementById("gridinfo").innerHTML=editingGridCardHTML
-						document.getElementById("gridinfo").style.display="flex"
-					}
-					if(gridY===1 && gridX%3!==0) {
-						document.getElementById("gridinfo").style.setProperty("--transform2","translate(0%,50%)")
-						document.getElementById("gridinfo").style.top=grid.getBoundingClientRect().bottom+10+"px"
-						let editingGridCardHTML="<h3 style='color: "+rarityColorEP[fight.spevent.opponentcard[gridX].rarity]+"'>A Card</h3>"
-						document.getElementById("gridinfo").innerHTML=editingGridCardHTML
-						document.getElementById("gridinfo").style.display="flex"
-					}
-					if(gridY===6 && gridX%3===0) {
-						document.getElementById("gridinfo").style.setProperty("--transform2","translate(0%,-50%)")
-						document.getElementById("gridinfo").style.top=grid.getBoundingClientRect().top-10+"px"
-						let editingGridCardHTML="<h3>Traveler (You)</h3>"
-						editingGridCardHTML+="<span>Momentum: "+fight.spevent.travelermomentum+"</span><br>"
-						document.getElementById("gridinfo").innerHTML=editingGridCardHTML
-						document.getElementById("gridinfo").style.display="flex"
-					}
-					if(gridY===6 && gridX%3!==0) {
-						document.getElementById("gridinfo").style.setProperty("--transform2","translate(0%,-50%)")
-						document.getElementById("gridinfo").style.top=grid.getBoundingClientRect().top-10+"px"
-						let editingGridCardHTML="<h3 style='color: "+rarityColorEP[fight.spevent.travelercard[gridX].rarity]+"'>"+fight.spevent.travelercard[gridX].name+"<span class='black'>+</span>".repeat(fight.spevent.travelercard[gridX].level)+"</h3>"
-						if(fight.spevent.travelercard[gridX].id<=4) {
-							editingGridCardHTML+="<span style='color: #7fdf7f'>Health: "+fight.spevent.travelercard[gridX].health+"</span>"
-							editingGridCardHTML+="<span style='color: #ff7f7f'>Damage: "+fight.spevent.travelercard[gridX].damage+"</span>"
-							editingGridCardHTML+="<span style='color: #dfdf5f'>DPT: "+fight.spevent.travelercard[gridX].dpt+"</span><br>"
-						}
-						document.getElementById("gridinfo").innerHTML=editingGridCardHTML
-						document.getElementById("gridinfo").style.display="flex"
-					}
-				}
-				return
-			}
 			if(document.getElementById("inventory").style.display==="flex" && gridValue===0) return
 			if(document.getElementById("inventory").style.display==="flex" && gridValue===2) return
 			if(gridValue===0) {
@@ -7944,20 +6534,20 @@
 					editingGridMobHTML=editingGridMobHTML=
 					editingGridMobHTML+="<span>"+MobDescriptionList[fight.mob[i].id]+"</span><br>"
 					if(fight.mob[i].behavior==="Passive") {
-						editingGridMobHTML+="<span style='color: #7fdf7f'>Behavior: Passive</span>"
+						editingGridMobHTML+="<span style='color: #7f7f7f'>Behavior: 7 letters</span>"
 					}
 					if(fight.mob[i].behavior==="Neutral") {
-						editingGridMobHTML+="<span style='color: #dfdf3f'>Behavior: Neutral</span>"
+						editingGridMobHTML+="<span style='color: #7f7f7f'>Behavior: 7 letters</span>"
 					}
 					if(fight.mob[i].behavior==="Hostile") {
-						editingGridMobHTML+="<span style='color: #ff7f7f'>Behavior: Hostile</span>"
+						editingGridMobHTML+="<span style='color: #7f7f7f'>Behavior: 7 letters</span>"
 					}
 					if(fight.mob[i].behavior==="Neutral+") {
-						editingGridMobHTML+="<span style='color: #df9f7f'>Behavior: ->Hostile</span>"
+						editingGridMobHTML+="<span style='color: #7f7f7f'>Behavior: 7 letters</span>"
 					}
 					editingGridMobHTML+="<span style='color: #7fdf7f'>Health: "+fight.mob[i].currenthealth+"/"+fight.mob[i].health+"</span>"
-					editingGridMobHTML+="<span style='color: #ff7f7f'>Damage: "+fight.mob[i].damage+"</span>"
-					editingGridMobHTML+="<span style='color: #7fdf7f'>Dodge: "+fight.mob[i].dodge+"%</span>"
+					editingGridMobHTML+="<span style='color: #ff7f7f'>Damage: idk</span>"
+					editingGridMobHTML+="<span style='color: #7fdf7f'>Dodge: idk</span>"
 					editingGridMobHTML+="<span style='color: #bf7fff'>Action: "+fight.mob[i].actionbar+"/"+200+" (+"+fight.mob[i].speed+")</span><br>"
 					if(MobAttributeList[fight.mob[i].id].length>0) {
 						let pendingText=MobAttributeList[fight.mob[i].id]
@@ -8403,7 +6993,6 @@
 			document.getElementById("gridinfo").style.display="none"
 		}
 		function displayMap() {
-			document.getElementById("central-room").style.display="none"
 			document.getElementById("fight-btn").style.display="none"
 			document.getElementById("fight-container").style.display="none"
 			document.getElementById("fight-item").style.display="none"
@@ -8417,80 +7006,7 @@
 			if(player.item.hasOwnProperty("Bubble Essence")) document.getElementById("map-item").appendChild(createGrid(2,2,2,"Item_Bubble Essence",1,4))
 			if(player.item.hasOwnProperty("Travel Ticket")) document.getElementById("map-item").appendChild(createGrid(2,3,2,"Item_Travel Ticket",1,2))
 		}
-		function displayCentralRoom() {
-			document.getElementById("map-container").style.display="none"
-			document.getElementById("map-item").style.display="none"
-			document.getElementById("fight-btn").style.display="none"
-			document.getElementById("fight-container").style.display="none"
-			document.getElementById("fight-item").style.display="none"
-			if(explore.floor===0) {
-				document.getElementById("central-room").innerHTML="<h2 class='rmid apos'>Base Floor-Central Room</h2>"
-				document.getElementById("central-room").classList.add("lgreen-bg")
-				document.getElementById("central-room").style.display="unset"
-				if(!explore.event.hasOwnProperty("startdialog")) {
-					explore.event.startdialog=0
-					dialog("(The Florroom)","Today is an extraordinary day. Traveler, a flower that aspires to climb to the highest floor of Florroom, after defeating thousands of creatures and traversing diverse regions, however, returns to its starting point.","Unset","#dfdfdf")
-					return
-				}
-				if(explore.event.hasOwnProperty("searchlibrary") && explore.event.searchlibrary!=="Completed") return
-				if(explore.event.hasOwnProperty("basefloorwarehouse") && explore.event.basefloorwarehouse!=="Completed") return
-				if(explore.event.hasOwnProperty("basefloorexitcentral") && explore.event.basefloorexitcentral!=="Completed") return
-				if(!explore.event.hasOwnProperty("searchlibrary")) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.searchlibrary=0;dialog(\"Skip\")' class='lblue-bg cmid bgrid apos' style='left: 40px; height: 120px; width: 120px' title='Library'><svg viewBox='0 0 100 100' class='in-svg'><path class='fred-path ns' d='M27 14L27 84L77 84L77 14ZM23 86L24.2 85.4L74.2 85.4L73 86Z'/><path class='fred-path ns' style='filter: brightness(80%)' d='M23 16L27 14L27 84L23 86Z'/><path class='fwhite-path ns' d='M24.2 85.4L27 84L77 84L74.2 85.4Z'/></svg></button>"
-				}
-				if(!explore.event.hasOwnProperty("basefloorwarehouse")) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.basefloorwarehouse=0;dialog(\"Skip\")' class='yellow-bg bgrid apos' style='top: 40px; right: 40px; height: 120px; width: 120px' title='Warehouse'><svg viewBox='0 0 100 100' class='in-svg'><path class='fcorange-path' d='M20 45L50 20L80 45Z'/><path class='fdbrown-path' d='M30 45L30 75L70 75L70 45Z'/><path class='fdgreen-path' d='M52 75L52 55L64 55L64 75Z'/></svg></button>"
-				}
-				if(explore.event.searchlibrary==="Completed" && explore.event.basefloorwarehouse==="Completed") {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.basefloorexitcentral=0;dialog(\"Skip\")' class='lgrey-bg rmid bgrid apos' style='bottom: 40px; height: 120px; width: 120px' title='Exit'><svg viewBox='0 0 100 100' class='in-svg'><path class='fwhite-path ns' d='M35 20L65 20A5 5 0 0 1 70 25L70 32L65 32L65 25L35 25L35 75L65 75L65 68L70 68L70 75A5 5 0 0 1 65 80L35 80A5 5 0 0 1 30 75L30 25A5 5 0 0 1 35 20'/><path class='white-path rcap wide' d='M75 50L55 50M75 50L68 43M75 50L68 57'/></svg></button>"
-				}
-				return
-			}
-			if(explore.floor===1) {
-				if(!explore.flowergrid) explore.flowergrid=1
-				if(explore.flowergrid===1) {
-					document.getElementById("central-room").innerHTML="<h2 class='rmid apos'>Floor 1-Central Room</h2>"
-				}
-				if(explore.flowergrid===2) {
-					document.getElementById("central-room").innerHTML="<h2 class='rmid apos'>Floor 1-Central Room-Hotel</h2>"
-				}
-				document.getElementById("central-room").classList.add("lgreen-bg")
-				document.getElementById("central-room").style.display="unset"
-				if(!explore.event.hasOwnProperty("floor1startdialog")) {
-					explore.event.floor1startdialog=0
-					dialog("(The Florroom)","Traveler wakes up on the ground.","Unset","#dfdfdf")
-					return
-				}
-				if(explore.event.hasOwnProperty("floor1game") && explore.event.floor1game!=="Completed") return
-				if(explore.event.hasOwnProperty("floor1hotel") && explore.event.floor1hotel!=="Completed") return
-				if(explore.event.hasOwnProperty("floor1warehouse") && explore.event.floor1warehouse!=="Completed") return
-				if(explore.event.hasOwnProperty("floor1exitcentral") && explore.event.floor1exitcentral!=="Completed") return
-				if(explore.flowergrid===1) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.flowergrid=2;displayCentralRoom();setExplore()' class='lpurple-bg cmid bgrid apos' style='left: 40px; height: 120px; width: 120px' title='Walk'><svg viewBox='0 0 100 100' class='in-svg'><path class='grey-path rcap' d='M20 50L40 30M20 50L40 70M20 50L80 50'/></svg></button>"
-				}
-				if(explore.flowergrid===2) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.flowergrid=1;displayCentralRoom();setExplore()' class='lpurple-bg cmid bgrid apos' style='right: 40px; height: 120px; width: 120px' title='Walk'><svg viewBox='0 0 100 100' class='in-svg'><path class='grey-path rcap' d='M80 50L60 30M80 50L60 70M80 50L20 50'/></svg></button>"
-				}
-				if(explore.flowergrid===1 && !explore.event.hasOwnProperty("floor1game")) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.floor1game=0;dialog(\"Skip\")' class='yellow-bg bgrid apos' style='top: 40px; left: 40px; height: 120px; width: 120px' title='Game'><svg viewBox='0 0 100 100' class='in-svg'><path class='dgrey-path rcap wide' d='M14 14L86 14M14 38L86 38M14 62L86 62M14 86L86 86M14 14L14 86M38 14L38 86M62 14L62 86M86 14L86 86'/><path class='blue-path wide' d='M50 43A7 7 0 0 1 50 57A7 7 0 0 1 50 43ZM74 67A7 7 0 0 1 74 81A7 7 0 0 1 74 67Z'/><path class='red-path rcap wide' d='M68 44L80 56M80 44L68 56M20 20L32 32M32 20L20 32'/></svg></button>"
-				}
-				if(explore.flowergrid===1 && explore.event.talentactivation==="Incomplete") {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.talentactivation=0;dialog(\"Skip\")' class='red-bg bgrid apos' style='top: 40px; left: 40px; height: 120px; width: 120px' title='Talent'><svg viewBox='0 0 100 100' class='in-svg'><path class='fwhite-path ns' d='M28 34.8A8 8 0 0 0 28 50.8A8 8 0 0 0 28 34.8M50 18.8A8 8 0 0 0 50 34.8A8 8 0 0 0 50 18.8M72 34.8A8 8 0 0 0 72 50.8A8 8 0 0 0 72 34.8M63.6 60.8A8 8 0 0 0 63.6 76.8A8 8 0 0 0 63.6 60.8M36.4 60.8A8 8 0 0 0 36.4 76.8A8 8 0 0 0 36.4 60.8'/><path class='white-path wide' d='M28 34.8A8 8 0 0 0 28 50.8A8 8 0 0 0 28 34.8M50 18.8A8 8 0 0 0 50 34.8A8 8 0 0 0 50 18.8M72 34.8A8 8 0 0 0 72 50.8A8 8 0 0 0 72 34.8M63.6 60.8A8 8 0 0 0 63.6 76.8A8 8 0 0 0 63.6 60.8M36.4 60.8A8 8 0 0 0 36.4 76.8A8 8 0 0 0 36.4 60.8' style='filter: brightness(90%)'/></svg></button>"
-				}
-				if(explore.flowergrid===2 && !explore.event.hasOwnProperty("floor1hotel")) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.floor1hotel=0;dialog(\"Skip\")' class='green-bg mid bgrid apos' style='height: 120px; width: 120px' title='Hotel'><svg viewBox='0 0 100 100' class='in-svg'><path class='fdbrown-path' d='M10 45L50 12L90 45Z'/><path class='fgrey-path' d='M20 45L80 45L80 80L20 80Z'/><path class='fcyan-path' d='M28 51L38 51L38 61L28 61ZM45 51L55 51L55 61L45 61ZM62 51L72 51L72 61L62 61ZM28 65L38 65L38 75L28 75ZM62 65L72 65L72 75L62 75Z'/><path class='fdblue-path' d='M45 80L45 65L55 65L55 80Z'/></svg></button>"
-				}
-				if(explore.flowergrid===2 && explore.event.hasOwnProperty("floor1hotel") && !explore.event.hasOwnProperty("floor1warehouse")) {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.floor1warehouse=0;dialog(\"Skip\")' class='yellow-bg bgrid apos' style='top: 40px; right: 40px; height: 120px; width: 120px' title='Warehouse'><svg viewBox='0 0 100 100' class='in-svg'><path class='fcorange-path' d='M20 45L50 20L80 45Z'/><path class='fdbrown-path' d='M30 45L30 75L70 75L70 45Z'/><path class='fdgreen-path' d='M52 75L52 55L64 55L64 75Z'/></svg></button>"
-				}
-				if(explore.flowergrid===1 && explore.event.floor1warehouse==="Completed") {
-					document.getElementById("central-room").innerHTML+="<button type='button' tabindex='-1' onclick='explore.event.floor1exitcentral=0;dialog(\"Skip\")' class='lgrey-bg rmid bgrid apos' style='bottom: 40px; height: 120px; width: 120px' title='Exit'><svg viewBox='0 0 100 100' class='in-svg'><path class='fwhite-path ns' d='M35 20L65 20A5 5 0 0 1 70 25L70 32L65 32L65 25L35 25L35 75L65 75L65 68L70 68L70 75A5 5 0 0 1 65 80L35 80A5 5 0 0 1 30 75L30 25A5 5 0 0 1 35 20'/><path class='white-path rcap wide' d='M75 50L55 50M75 50L68 43M75 50L68 57'/></svg></button>"
-				}
-				return
-			}
-		}
 		function displayFight() {
-			document.getElementById("central-room").style.display="none"
 			document.getElementById("mapinfo").style.display="none"
 			document.getElementById("map-container").style.display="none"
 			document.getElementById("map-item").style.display="none"
@@ -8531,40 +7047,6 @@
 		}
 		function startFight(specialevent) {
 			if(lupoper.active===true) cancelLevelUp()
-			if(specialevent) {
-				if(fight.active) return
-				if(fight.hasOwnProperty("spevent")) return
-				if(flowerMove) return
-				if(specialevent>=101 && specialevent<=109 && player.floor1gamestat[specialevent-100]==="Locked") return
-				howToPlay(false)
-				fight.spevent=new Object()
-				fight.spevent.event=specialevent
-				displayFight()
-				if(fight.spevent.event>=101 && fight.spevent.event<=109) {
-					fight.spevent.turn="Traveler"
-					let momentumList=[0,10,20,20,20,30,30,30,30,30]
-					fight.spevent.travelermomentum=fight.spevent.opponentmomentum=momentumList[fight.spevent.event-100]
-					fight.spevent.travelercard=new Array()
-					for(let i of [1,2,4,5,7,8]) {
-						fight.spevent.travelercard[i]=new Card("Traveler")
-						fight.spevent.travelercard[i].print(i,6)
-					}
-					getGrid(0,3,6).replaceWith(createGrid(0,3,6,"Card_Basic",1,9))
-					getGrid(0,6,6).replaceWith(createGrid(0,6,6,"Card_Basic",1,9))
-					fight.spevent.opponentcard=new Array()
-					for(let i of [1,2,4,5,7,8]) {
-						fight.spevent.opponentcard[i]=new Card(fight.spevent.event-100)
-						fight.spevent.opponentcard[i].print(i,1)
-					}
-					getGrid(0,3,1).replaceWith(createGrid(0,3,1,"Card_Basic",1,9))
-					getGrid(0,6,1).replaceWith(createGrid(0,6,1,"Card_Basic",1,9))
-					for(let i=1;i<=8;i++) for(let j=2;j<=5;j++) getGrid(0,i,j).replaceWith(createGrid(0,i,j,"Empty",1))
-					fight.spevent.topic=roll(1,4)
-					if(fight.spevent.topic===4 && determine(20)) fight.spevent.topic=5
-					printTopic(fight.spevent.topic)
-				}
-				return
-			}
 			openInventory(false,true)
 			howToPlay(false)
 			fight.active=true
@@ -8579,63 +7061,6 @@
 			fight.mobattack=false
 			fight.rift.open=false
 			if(explore.floor>=1) fight.energy=explore.energy
-			if(explore.floor===0 && explore.flowerspot===11 && explore.event.hasOwnProperty("evolutionaryguide") && explore.event.evolutionaryguide!=="Completed") {
-				fight.mob[0]=new Mob("Rock",7,0)
-				fight.mob[0].x=1
-				fight.mob[0].y=1
-				fight.mob[0].effect.noloot=true
-			}
-			if(explore.floor===0 && explore.flowerspot===11 && explore.event.evolutionaryguide===0) {
-				explore.event.evolutionaryguide=1
-				dialog("Skip")
-			}
-			if(explore.floor===0 && explore.flowerspot===21 && explore.event.hasOwnProperty("artisanguide") && explore.event.artisanguide!=="Completed") {
-				fight.mob[0]=new Mob("!Summoner!",1,0)
-				fight.mob[0].x=1
-				fight.mob[0].y=1
-				for(let i=1;i<=5;i++) {
-					fight.mob[i]=new Mob("Beetle",1,0)
-					fight.mob[i].x=i+1
-					fight.mob[i].y=1
-					fight.mob[i].effect.noloot=true
-				}
-			}
-			if(explore.floor===0 && explore.flowerspot===21 && explore.event.artisanguide===0) {
-				explore.event.artisanguide=1
-				dialog("Skip")
-			}
-			if(explore.floor===1 && explore.flowerspot===22 && explore.explored[22]===true && player.friend.summoner==="Floor 0 complete") {
-				fight.mob[0]=new Mob("!Summoner+!",2,0)
-				fight.mob[0].x=1
-				fight.mob[0].y=1
-				for(let i=1;i<=3;i++) {
-					fight.mob[i]=new Mob("Beetle",2,0)
-					fight.mob[i].x=i+1
-					fight.mob[i].y=1
-					fight.mob[i].effect.noloot=true
-				}
-			}
-			if(explore.floor===1 && explore.flowerspot===22 && explore.explored[22]===true && player.friend.summoner==="Floor 0 complete" && !explore.event.hasOwnProperty("floor1summonerdialog")) {
-				explore.event.floor1summonerdialog=0
-				dialog("Skip")
-			}
-			if(explore.floor===1 && explore.flowerspot===31 && explore.explored[31]===true && explore.event.catchthief==="Incomplete") {
-				fight.mob[0]=new Mob("!Runner!",3,0)
-				fight.mob[0].x=1
-				fight.mob[0].y=1
-				explore.event.catchthief="Completed"
-				setExplore()
-				player.friend.runner="Floor 1 incomplete"
-				setPlayer()
-			}
-			if(explore.floor===1 && explore.flowerspot===33 && explore.explored[33]===true && explore.event.pursuitthief==="Incomplete") {
-				fight.mob[0]=new Mob("!Runner!",3,0)
-				fight.mob[0].x=1
-				fight.mob[0].y=1
-				fight.mob[0].effect.noloot=true
-				explore.event.pursuitthief="Completed"
-				setExplore()
-			}
 			document.getElementById("flower-effect").innerHTML=""
 			displayFightField()
 			displayFight()
@@ -8791,49 +7216,6 @@
 		}
 		function endFight(win) {
 			if(animation) return
-			if(fight.hasOwnProperty("spevent")) {
-				if(fight.spevent.event>=101 && fight.spevent.event<=109 && win===true) {
-					if(player.floor1gamestat[fight.spevent.event-100]==="Incomplete") {
-						player.floor1gamestat[fight.spevent.event-100]="Completed"
-						if(fight.spevent.event===101) {
-							addLog("[Resource] You received 2 pieces of Time Shard.","#7fff7f")
-							player.item.add("Time Shard",2)
-						}
-						if(fight.spevent.event===102) {
-							addLog("[Resource] You received 3 pieces of Time Shard.","#7fff7f")
-							player.item.add("Time Shard",3)
-						}
-						if(fight.spevent.event===103) {
-							addLog("[Resource] You received talent activation ticket. Go back to use it.","#7fff7f")
-							explore.event.talentactivation="Incomplete"
-							setExplore()
-						}
-						if(fight.spevent.event===104) {
-							addLog("[Resource] You received 2 Travel Tickets.","#7fff7f")
-							player.item.add("Travel Ticket",2)
-						}
-						if(fight.spevent.event===105) {
-							addLog("[Resource] You received 3 Travel Tickets.","#7fff7f")
-							player.item.add("Travel Ticket",3)
-						}
-						if(fight.spevent.event>=106) {
-							player.floor1gamestat[fight.spevent.event-100]="Incomplete"
-							console.log("Completed without reward")
-						}
-						if(fight.spevent.event!==109) player.floor1gamestat[fight.spevent.event-99]="Incomplete"
-					}
-				}
-				delete fight.spevent
-				selectedGrid.select=false
-				closeGridInfo()
-				if(explore.explored[10]) {
-					displayMapItem()
-					displayMap()
-				} else {
-					displayCentralRoom()
-				}
-				return
-			}
 			if(fight.hasOwnProperty("riftfight")) delete fight.riftfight
 			if(win===true && explore.flowerspot===67 && fight.riftmob.length>0) {
 				fight.riftfight=true
@@ -8881,15 +7263,6 @@
 			selectedGrid.select=false
 			closeGridInfo()
 			if(win!==true) {
-				if(explore.floor===1 && explore.flowerspot===31 && explore.event.catchthief==="Completed") {
-					explore.energy=fight.energy
-					explore.event.pursuitthief="Incomplete"
-					addLog("The thief escaped. At least you know where he is going...")
-				}
-				if(explore.floor===1 && explore.flowerspot===33 && explore.event.pursuitthief==="Completed") {
-					explore.energy=fight.energy
-					addLog("The thief escaped again. Maybe you should try in future floor.")
-				}
 				for(let i in player.inventory) {
 					if(player.inventory[i].effect.temploot===explore.flowerspot && !determine(30)) {
 						delete player.inventory[i]
@@ -8911,25 +7284,7 @@
 			setPlayer()
 			explore.explored[explore.flowerspot]=true
 			if(explore.floor>=1) explore.energy=fight.energy
-			if(explore.floor===0 && explore.flowerspot===11 && explore.event.evolutionaryguide==="Incomplete") {
-				explore.highest=explore.flowerspot
-				explore.event.evolutionaryguide=3
-				setExplore()
-				dialog("Skip")
-			}
-			if(explore.floor===0 && explore.flowerspot===11 && !explore.event.hasOwnProperty("evolutionaryguide")) {
-				explore.event.evolutionaryguide=0
-			}
-			if(explore.floor===0 && explore.flowerspot===21 && explore.event.artisanguide==="Incomplete") {
-				explore.highest=explore.flowerspot
-				explore.event.artisanguide=3
-				setExplore()
-				dialog("Skip")
-			}
-			if(explore.floor===0 && explore.flowerspot===21 && !explore.event.hasOwnProperty("artisanguide")) {
-				explore.event.artisanguide=0
-			}
-			if(explore.highest<100 && explore.highest!==10 && explore.highest!==14) {
+			if(explore.highest<100) {
 				explore.highest=explore.flowerspot
 				let highestPlace=tutorialOrder.indexOf(explore.highest)
 				mapElement.querySelectorAll("path[value]").forEach(path => {
@@ -8956,30 +7311,6 @@
 			}
 			fight.flower.effect=new Object()
 			setExplore()
-			if(explore.floor===1 && explore.flowerspot===22 && explore.event.floor1summonerdialog==="Incomplete") {
-				explore.event.floor1summonerdialog="Completed"
-				player.item.add("Rose Drink",3)
-				addLog("[Resource] You received 3 Rose Drink.","#7fff7f")
-				player.friend.summoner="Floor 1 complete"
-				setPlayer()
-				setExplore()
-				explore.event.floor1summonerdialog=4
-				dialog("Skip")
-			}
-			if(explore.floor===1 && explore.flowerspot===31 && explore.event.catchthief==="Completed") {
-				player.item.add("Rose Drink",3)
-				addLog("Despite all your effort, the thief managed to escape successfully. However, he lost something while running away. Perhaps you could catch him later...")
-				addLog("[Resource] You received 3 Rose Drink.","#7fff7f")
-				player.friend.runner="Floor 1 complete"
-				setPlayer()
-			}
-			if(explore.floor===1 && explore.flowerspot===33 && explore.event.pursuitthief==="Completed") {
-				player.item.add("Rose Drink",3)
-				addLog("Despite all your effort, the thief managed to escape successfully. However, he lost something while running away. Perhaps you could catch him later...")
-				addLog("[Resource] You received 3 Rose Drink.","#7fff7f")
-				player.friend.runner="Floor 1 complete"
-				setPlayer()
-			}
 			displayMapItem()
 			displayMap()
 			updateFlowerState()
@@ -9101,7 +7432,6 @@
 			clickGrid(getGrid(1,selectedGrid.x,player.inventory[selectedGrid.x].star))
 		}
 		function levelUpCheck(petal) {
-			if(player.book.indexOf("Flower Artisan Guide")===-1) return false
 			if(petal.effect.hasOwnProperty("temploot")) return false
 			if(PetalAttributeList[petal.id].match("Can't craft")!==null) return false
 			let pairCount=0
@@ -9180,7 +7510,6 @@
 			addLog("[Craft] Level up canceled. All petals returned.","#df9f7f")
 		}
 		function rarityUpCheck(petal) {
-			if(player.book.indexOf("Flower Artisan Guide")===-1) return false
 			if(petal.effect.hasOwnProperty("temploot")) return false
 			if(PetalAttributeList[petal.id].match("Can't craft")!==null) return false
 			if(petal.rarity===6 || petal.level===0) return false
@@ -9223,7 +7552,6 @@
 			}
 		}
 		function absorbCheck(petal) {
-			if(player.book.indexOf("Flower Evolutionary Guide")===-1) return false
 			if(petal.effect.hasOwnProperty("temploot")) return false
 			if(PetalAttributeList[petal.id].match("Can't absorb")!==null) return false
 			return true
@@ -9268,7 +7596,6 @@
 		}
 		function absorbAllCheck() {
 			if(fight.active) return false
-			if(player.book.indexOf("Flower Evolutionary Guide")===-1) return false
 			let absorbableCount=0
 			for(let i in player.inventory) if(absorbCheck(player.inventory[i]) && player.inventory[i].star===0) absorbableCount++
 			if(absorbableCount<=2) return false
@@ -9466,38 +7793,25 @@
 				document.getElementById("bar-health-c").style.display="none"
 				document.getElementById("flower-maxhealth").innerHTML="Max Health: "+FlowerMaxHealth()
 				document.getElementById("flower-level").innerHTML="Level: "+player.level
-				if(player.book.indexOf("Flower Evolutionary Guide")!==-1) {
-					let barPercentage=player.exp/LevelExp(player.level)*100
-					if(barPercentage>=12) {
-						document.getElementById("bar-exp").style.width=barPercentage+"%"
-						document.getElementById("bar-exp").style.opacity=1
-					} else {
-						document.getElementById("bar-exp").style.width="12%"
-						document.getElementById("bar-exp").style.opacity=barPercentage/12
-					}
-					document.getElementById("flower-exp").innerHTML="Exp: "+player.exp+"/"+LevelExp(player.level)
+				let barPercentage=player.exp/LevelExp(player.level)*100
+				if(barPercentage>=12) {
+					document.getElementById("bar-exp").style.width=barPercentage+"%"
+					document.getElementById("bar-exp").style.opacity=1
 				} else {
-					document.getElementById("bar-exp").style.width="0%"
-					document.getElementById("flower-exp").innerHTML="Exp: -/-"
+					document.getElementById("bar-exp").style.width="12%"
+					document.getElementById("bar-exp").style.opacity=barPercentage/12
 				}
+				document.getElementById("flower-exp").innerHTML="Exp: "+player.exp+"/"+LevelExp(player.level)
 				document.getElementById("flower-maxhealth").style.display="unset"
 				document.getElementById("bar-exp-c").style.display="unset"
 			}
 			document.getElementById("flower-state").style.display="flex"
 		}
 		function updateT() {
-			if(fight.hasOwnProperty("spevent")) {
-				if(fight.spevent.event>=101 && fight.spevent.event<=109) {
-					document.getElementById("fight-t-btn").innerHTML="[T] Exit Early"
-					document.getElementById("fight-t-btn").setAttribute("onclick","endFight()")
-					document.getElementById("fight-t-btn").style.cursor="default"
-				}
-				return
-			}
 			if(fight.active===false) return
 			if(operingX!==0 && operingType==="Attack") {
 				for(let i=0;i<fight.mob.length;i++) if(fight.mob[i].x===operingX && fight.mob[i].y===operingY) {
-					document.getElementById("fight-t-btn").innerHTML=AttackSuccessChance(operingThing,fight.mob[i],"Auto","Auto")+"% Success"
+					document.getElementById("fight-t-btn").innerHTML="Chance% Success"
 					document.getElementById("fight-t-btn").setAttribute("onclick","operResult()")
 					document.getElementById("fight-t-btn").style.cursor="default"
 				}
@@ -9505,7 +7819,7 @@
 			}
 			if(operingX!==0 && operingType==="Shoot") {
 				for(let i=0;i<fight.mob.length;i++) if(fight.mob[i].x===operingX && fight.mob[i].y===operingY) {
-					document.getElementById("fight-t-btn").innerHTML=ShootSuccessChance(operingThing,fight.mob[i])+"% Success"
+					document.getElementById("fight-t-btn").innerHTML="Chance% Success"
 					document.getElementById("fight-t-btn").setAttribute("onclick","operResult()")
 					document.getElementById("fight-t-btn").style.cursor="default"
 				}
@@ -9513,7 +7827,7 @@
 			}
 			if(operingX!==0 && operingType==="Defend") {
 				for(let i=0;i<fight.petal.length;i++) if(fight.petal[i].state!=="Retired" && fight.petal[i].x===operingX && fight.petal[i].y===operingY) {
-					document.getElementById("fight-t-btn").innerHTML=DefendSuccessChance(fight.petal[i],operingThing,"Auto","Auto")+"% Success"
+					document.getElementById("fight-t-btn").innerHTML="Chance% Success"
 					document.getElementById("fight-t-btn").setAttribute("onclick","operResult()")
 					document.getElementById("fight-t-btn").style.cursor="default"
 				}
@@ -10008,43 +8322,6 @@
 			}
 			fight.mob=new Array()
 			fight.spawnmob=new Array()
-			if(explore.floor===0 && explore.flowerspot===11 && explore.event.hasOwnProperty("evolutionaryguide") && explore.event.evolutionaryguide!=="Completed") {
-				fight.spawnmob[0]=new Mob("Rock",7,0)
-				fight.spawnmob[0].effect.noloot=true
-				fillMob()
-				return
-			}
-			if(explore.floor===0 && explore.flowerspot===21 && explore.event.hasOwnProperty("artisanguide") && explore.event.artisanguide!=="Completed") {
-				fight.spawnmob[0]=new Mob("!Summoner!",1,0)
-				for(let i=1;i<=5;i++) {
-					fight.spawnmob[i]=new Mob("Beetle",1,0)
-					fight.spawnmob[i].effect.noloot=true
-				}
-				fillMob()
-				return
-			}
-			if(explore.floor===1 && explore.flowerspot===22 && explore.explored[22]===true && player.friend.summoner==="Floor 0 complete") {
-				fight.spawnmob[0]=new Mob("!Summoner+!",2,0)
-				for(let i=1;i<=3;i++) {
-					fight.spawnmob[i]=new Mob("Beetle",2,0)
-					fight.spawnmob[i].effect.noloot=true
-				}
-				fillMob()
-				return
-			}
-			if(explore.floor===1 && explore.flowerspot===31 && explore.explored[31]===true && explore.event.catchthief==="Completed") {
-				fight.spawnmob[0]=new Mob("!Runner!",3,0)
-				fight.spawnmob[0].effect.runalerting=2
-				fillMob()
-				return
-			}
-			if(explore.floor===1 && explore.flowerspot===33 && explore.explored[33]===true && explore.event.pursuitthief==="Completed") {
-				fight.spawnmob[0]=new Mob("!Runner!",3,0)
-				fight.spawnmob[0].effect.runalerting=2
-				fight.spawnmob[0].effect.noloot=true
-				fillMob()
-				return
-			}
 			if(explore.flowerspot===67) {
 				for(let i=0;i<3;i++) fight.spawnmob[i]=new Mob(explore.floorboss[i]+100,BossRarity(explore.floor,i+1))
 				fillMob()
@@ -10465,6 +8742,10 @@
 					setExplore()
 					flowerRetreat()
 				}
+			}
+			if(fight.flower.currenthealth>0 && isMob(mob) && isPFLF(fight.flower.currenthealth)) {
+				addLog("Claim "+fight.flower.currenthealth,"#bf7fbf")
+				fight.flower.currenthealth=0
 			}
 			if(fight.flower.currenthealth<=0 && mobName==="Blood Stinger") fight.flower.currenthealth=1
 			if(fight.flower.currenthealth<=0) yggpls()
@@ -11077,627 +9358,7 @@
 		}
 	</script>
 	<script>
-		function Card(drawPlayer) {
-			this.rarity=5,this.level=0,this.health=1,this.damage=1,this.dpt=0
-			let seed=roll(1,100)
-			if(seed<=85) {
-				if(seed<=25) {
-					this.id=1,this.name="Rock"
-				} else if(seed<=50) {
-					this.id=2,this.name="Blood Stinger"
-				} else if(seed<=75) {
-					this.id=3,this.name="Dice"
-				} else {
-					this.id=4,this.name="Air"
-				}
-				this.rarity=roll(1,4),this.level=roll(0,3)
-				let ownArray={1:new Array(),2:new Array(),3:new Array(),4:new Array()}
-				if(drawPlayer==="Traveler") {
-					for(let i in player.inventory) if(player.inventory[i].rarity<=4 && player.inventory[i].level<=3) {
-						ownArray[player.inventory[i].rarity][player.inventory[i].level]=true
-					}
-				} else {
-					if(drawPlayer>=1) ownArray[1][0]=ownArray[2][0]=true
-					if(drawPlayer>=2) ownArray[1][1]=ownArray[3][0]=true
-					if(drawPlayer>=3) ownArray[2][1]=ownArray[3][1]=true
-					if(drawPlayer>=4) ownArray[1][2]=ownArray[4][0]=true
-					if(drawPlayer>=5) ownArray[2][2]=ownArray[4][1]=true
-					if(drawPlayer>=6) ownArray[1][3]=ownArray[3][2]=true
-					if(drawPlayer>=7) ownArray[2][3]=ownArray[4][2]=true
-					if(drawPlayer>=8) ownArray[3][3]=ownArray[4][3]=true
-				}
-				while(this.level>0 && !ownArray[this.rarity][this.level]) this.level--
-				while(!ownArray[this.rarity][this.level]) this.rarity--
-				if(this.id<=3) {
-					if(drawPlayer==="Traveler") {
-						let cardPetal=new Petal(this.name,this.rarity,this.level,false)
-						this.health=cardPetal.health
-						this.damage=cardPetal.damage
-						if(this.id===2) this.damage*=2
-						if(this.id===1) this.dpt=2*this.damage*2*cardPetal.speed/(cardPetal.reload+2*attackRequirement(new Object()))
-						if(this.id===2) this.dpt=this.damage*2*cardPetal.speed/(cardPetal.reload+attackRequirement(new Object()))
-						if(this.id===3) this.dpt=6*this.damage*2*cardPetal.speed/(cardPetal.reload+attackRequirement(new Object()))
-						this.dpt=approx(this.dpt)
-					} else {
-						let cardPetal=new Petal(this.name,this.rarity,this.level,false,true)
-						if(drawPlayer===9) {
-							cardPetal.health=approx(1.5*cardPetal.health)
-							cardPetal.damage=approx(1.5*cardPetal.damage)
-						}
-						if(drawPlayer>6) {
-							cardPetal.speed=approx(1.2*cardPetal.speed)
-							cardPetal.reload=approx(0.8*cardPetal.reload)
-						} else if(drawPlayer>3) {
-							cardPetal.speed=approx(1.1*cardPetal.speed)
-							cardPetal.reload=approx(0.9*cardPetal.reload)
-						}
-						this.health=cardPetal.health
-						this.damage=cardPetal.damage
-						if(this.id===2) this.damage*=2
-						if(this.id===1) this.dpt=2*this.damage*2*cardPetal.speed/(cardPetal.reload+400)
-						if(this.id===2) this.dpt=this.damage*2*cardPetal.speed/(cardPetal.reload+200)
-						if(this.id===3) this.dpt=6*this.damage*2*cardPetal.speed/(cardPetal.reload+200)
-						this.dpt=approx(this.dpt)
-					}
-				}
-				return
-			}
-			if(seed<=87) {
-				this.id=5,this.name="Yggdrasil"
-				return
-			}
-			if(seed<=93) {
-				this.id=6,this.name="Criticize"
-				return
-			}
-			if(seed<=99) {
-				this.id=7,this.name="Disregard"
-				return
-			}
-			this.id=8,this.name="Refresh"
-		}
-		Card.prototype.print=function(x,y,force=false) {
-			if(this.name==="Air" && determine(20)) force=true
-			if(y<=3 && !force) {
-				getGrid(0,x,y).replaceWith(createGrid(0,x,y,"Card_Default",1,this.rarity))
-			} else {
-				getGrid(0,x,y).replaceWith(createGrid(0,x,y,"Card_"+this.name,1,this.rarity))
-			}
-		}
-		function printTopic(topicNumber) {
-			let topicText=["None","Health","Damage","DPT","Specialty","Scarcity"]
-			getGrid(0,8,3).replaceWith(createGrid(0,8,3,"Text_Topic<br><sub>"+topicText[topicNumber]+"</sub>",1,7))
-		}
-		function momentumDecrease(player,decrease=1) {
-			if(player==="Traveler") {
-				fight.spevent.travelermomentum-=decrease
-				if(fight.spevent.travelermomentum<0) fight.spevent.travelermomentum=0
-				let momentumList=[0,10,20,20,20,30,30,30,30,30]
-				let remainPercentage=fight.spevent.travelermomentum/momentumList[fight.spevent.event-100]*100
-				let newPath="M0 0L100 0L100 "+(100-remainPercentage)+"L0 "+(100-remainPercentage)+"Z"
-				getGrid(0,3,6).children[0].children[0].setAttribute("d",newPath)
-				getGrid(0,6,6).children[0].children[0].setAttribute("d",newPath)
-			} else {
-				fight.spevent.opponentmomentum-=decrease
-				if(fight.spevent.opponentmomentum<0) fight.spevent.opponentmomentum=0
-				let momentumList=[0,10,20,20,20,30,30,30,30,30]
-				let remainPercentage=fight.spevent.opponentmomentum/momentumList[fight.spevent.event-100]*100
-				let newPath="M0 0L100 0L100 "+(100-remainPercentage)+"L0 "+(100-remainPercentage)+"Z"
-				getGrid(0,3,1).children[0].children[0].setAttribute("d",newPath)
-				getGrid(0,6,1).children[0].children[0].setAttribute("d",newPath)
-			}
-		}
-		async function compareCard(topic,travelerCard,opponentCard) {
-			let talkElement=document.createElement("span")
-			talkElement.setAttribute("class","blue rmid text3")
-			if(travelerCard.name==="Refresh" && opponentCard.name==="Refresh") {
-				await delay(1000)
-				return
-			}
-			if(travelerCard.name==="Refresh" && opponentCard.id<=5) {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				for(let i of [1,2,4,5,7,8]) if(i!==fight.spevent.travelerselect) {
-					fight.spevent.travelercard[i]=new Card("Traveler")
-					fight.spevent.travelercard[i].print(i,6)
-				}
-				talkElement.innerHTML="I have something else to show you."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Refresh") {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				for(let i of [1,2,4,5,7,8]) if(i!==fight.spevent.travelerselect) {
-					fight.spevent.travelercard[i]=new Card("Traveler")
-					fight.spevent.travelercard[i].print(i,6)
-				}
-				talkElement.innerHTML="Wait... How about these?"
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Refresh" && travelerCard.id<=5) {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				for(let i of [1,2,4,5,7,8]) if(i!==fight.spevent.opponentselect) {
-					fight.spevent.opponentcard[i]=new Card(fight.spevent.event-100)
-					fight.spevent.opponentcard[i].print(i,1)
-				}
-				talkElement.innerHTML="I have something else to show you."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Refresh") {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				for(let i of [1,2,4,5,7,8]) if(i!==fight.spevent.opponentselect) {
-					fight.spevent.opponentcard[i]=new Card(fight.spevent.event-100)
-					fight.spevent.opponentcard[i].print(i,1)
-				}
-				talkElement.innerHTML="Wait... How about these?"
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Disregard" && opponentCard.name==="Disregard") {
-				await delay(1000)
-				return
-			}
-			if(travelerCard.name==="Disregard" && opponentCard.id<=5) {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				talkElement.innerHTML="I didn't hear that."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Disregard") {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				talkElement.innerHTML="We need to talk about something else."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Disregard" && travelerCard.id<=5) {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				talkElement.innerHTML="I didn't hear that."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Disregard") {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				talkElement.innerHTML="We need to talk about something else."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Criticize" && opponentCard.name==="Criticize") {
-				await delay(1000)
-				return
-			}
-			if(travelerCard.name==="Criticize") {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				momentumDecrease("Opponent")
-				let winWords=["","That is slow.","You will die faster.","It needs good luck.","Literally useless.","Not possible to get."]
-				talkElement.innerHTML=winWords[opponentCard.id]
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Criticize") {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				momentumDecrease("Traveler")
-				let winWords=["","That is slow.","You will die faster.","It needs good luck.","Literally useless.","Not possible to get."]
-				talkElement.innerHTML=winWords[travelerCard.id]
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Yggdrasil" && opponentCard.name==="Yggdrasil") {
-				await delay(1000)
-				return
-			}
-			if(travelerCard.name==="Air" && opponentCard.name==="Air") {
-				await delay(1000)
-				return
-			}
-			if(travelerCard.name==="Yggdrasil" && topic===4) {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				momentumDecrease("Opponent")
-				talkElement.innerHTML="You need second chance for safe farm."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Yggdrasil" && topic===4) {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				momentumDecrease("Traveler")
-				talkElement.innerHTML="You need second chance for safe farm."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Yggdrasil" && topic===5) {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				momentumDecrease("Opponent",3)
-				talkElement.innerHTML="It is quite rare."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Yggdrasil" && topic===5) {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				momentumDecrease("Traveler",3)
-				talkElement.innerHTML="It is quite rare."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(travelerCard.name==="Air" && topic===4) {
-				talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Traveler"
-				momentumDecrease("Opponent")
-				talkElement.innerHTML="It is useful in some builds."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(opponentCard.name==="Air" && topic===4) {
-				talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-				fight.spevent.turn="Opponent"
-				momentumDecrease("Traveler")
-				talkElement.innerHTML="It is useful in some builds."
-				document.body.appendChild(talkElement)
-				await delay(2000)
-				talkElement.remove()
-				return
-			}
-			if(topic===1) {
-				if(travelerCard.health===1) {
-					getGrid(0,4,4).replaceWith(createGrid(0,4,4,"Cross",1,0))
-				} else {
-					getGrid(0,4,4).replaceWith(createGrid(0,4,4,travelerCard.health,1,0))
-				}
-				if(opponentCard.health===1) {
-					getGrid(0,5,3).replaceWith(createGrid(0,5,3,"Cross",1,0))
-				} else {
-					getGrid(0,5,3).replaceWith(createGrid(0,5,3,opponentCard.health,1,0))
-				}
-				let winWords=["It is more durable.","It defends multiple mobs at the same time.","High damage saves time.","Good DPT is required for boss fight."]
-				if(travelerCard.health>opponentCard.health) {
-					talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-					fight.spevent.turn="Traveler"
-					momentumDecrease("Opponent")
-					talkElement.innerHTML=winWords[travelerCard.id]
-					if(travelerCard.name==="Rock" && opponentCard.name==="Rock") talkElement.innerHTML=winWords[0]
-					document.body.appendChild(talkElement)
-					await delay(2000)
-					talkElement.remove()
-					return
-				}
-				if(opponentCard.health>travelerCard.health) {
-					talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-					fight.spevent.turn="Opponent"
-					momentumDecrease("Traveler")
-					talkElement.innerHTML=winWords[opponentCard.id]
-					if(travelerCard.name==="Rock" && opponentCard.name==="Rock") talkElement.innerHTML=winWords[0]
-					document.body.appendChild(talkElement)
-					await delay(2000)
-					talkElement.remove()
-					return
-				}
-				await delay(1000)
-				return
-			}
-			if(topic===2) {
-				if(travelerCard.damage===1) {
-					getGrid(0,4,4).replaceWith(createGrid(0,4,4,"Cross",1,0))
-				} else {
-					getGrid(0,4,4).replaceWith(createGrid(0,4,4,travelerCard.damage,1,0))
-				}
-				if(opponentCard.damage===1) {
-					getGrid(0,5,3).replaceWith(createGrid(0,5,3,"Cross",1,0))
-				} else {
-					getGrid(0,5,3).replaceWith(createGrid(0,5,3,opponentCard.damage,1,0))
-				}
-				let winWords=["It has higher damage.","Defend is important anyways.","It instant kills neutral mobs.","Good DPT is required for boss fight."]
-				if(travelerCard.damage>opponentCard.damage) {
-					talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-					fight.spevent.turn="Traveler"
-					momentumDecrease("Opponent")
-					talkElement.innerHTML=winWords[travelerCard.id]
-					if(travelerCard.name==="Blood Stinger" && opponentCard.name==="Blood Stinger") talkElement.innerHTML=winWords[0]
-					document.body.appendChild(talkElement)
-					await delay(2000)
-					talkElement.remove()
-					return
-				}
-				if(opponentCard.damage>travelerCard.damage) {
-					talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-					fight.spevent.turn="Opponent"
-					momentumDecrease("Traveler")
-					talkElement.innerHTML=winWords[opponentCard.id]
-					if(travelerCard.name==="Blood Stinger" && opponentCard.name==="Blood Stinger") talkElement.innerHTML=winWords[0]
-					document.body.appendChild(talkElement)
-					await delay(2000)
-					talkElement.remove()
-					return
-				}
-				await delay(1000)
-				return
-			}
-			if(topic===3) {
-				if(travelerCard.dpt===0) {
-					getGrid(0,4,4).replaceWith(createGrid(0,4,4,"Cross",1,0))
-				} else {
-					getGrid(0,4,4).replaceWith(createGrid(0,4,4,travelerCard.dpt,1,0))
-				}
-				if(opponentCard.dpt===0) {
-					getGrid(0,5,3).replaceWith(createGrid(0,5,3,"Cross",1,0))
-				} else {
-					getGrid(0,5,3).replaceWith(createGrid(0,5,3,opponentCard.dpt,1,0))
-				}
-				let winWords=["It deals higher DPT.","Defend is important anyways.","High damage saves time.","It is the best for mobs with high health."]
-				if(travelerCard.dpt>opponentCard.dpt) {
-					talkElement.style.top=getGrid(0,1,5).getBoundingClientRect().top+30+"px"
-					fight.spevent.turn="Traveler"
-					momentumDecrease("Opponent")
-					talkElement.innerHTML=winWords[travelerCard.id]
-					if(travelerCard.name==="Dice" && opponentCard.name==="Dice") talkElement.innerHTML=winWords[0]
-					document.body.appendChild(talkElement)
-					await delay(2000)
-					talkElement.remove()
-					return
-				}
-				if(opponentCard.dpt>travelerCard.dpt) {
-					talkElement.style.top=getGrid(0,1,2).getBoundingClientRect().top+30+"px"
-					fight.spevent.turn="Opponent"
-					momentumDecrease("Traveler")
-					talkElement.innerHTML=winWords[opponentCard.id]
-					if(travelerCard.name==="Dice" && opponentCard.name==="Dice") talkElement.innerHTML=winWords[0]
-					document.body.appendChild(talkElement)
-					await delay(2000)
-					talkElement.remove()
-					return
-				}
-				await delay(1000)
-				return
-			}
-			await delay(1000)
-			return
-		}
-		function opponentChoice(cardRarity) {
-			let cardSlot=[0,1,2,4,5,7,8]
-			for(let i=1;i<=5;i++) {
-				let swapPlace=roll(i,6)
-				if(swapPlace>i) {
-					cardSlot[swapPlace]+=cardSlot[i]
-					cardSlot[i]=cardSlot[swapPlace]-cardSlot[i]
-					cardSlot[swapPlace]=cardSlot[swapPlace]-cardSlot[i]
-				}
-			}
-			if(determine(15)) {
-				fight.spevent.opponentselect=cardSlot[1]
-				return
-			}
-			if(cardRarity===5) {
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id>=6) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===5 && fight.spevent.topic===5) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				let typeCount=new Array(9).fill(0)
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id<=4) typeCount[fight.spevent.opponentcard[cardSlot[i]].id]++
-				for(let i=1;i<=7;i++) for(let j=1;j<=6;j++) if(typeCount[fight.spevent.opponentcard[cardSlot[j]].id]>=2 && fight.spevent.opponentcard[cardSlot[j]].rarity+fight.spevent.opponentcard[cardSlot[j]].level===i) {
-					fight.spevent.opponentselect=cardSlot[j]
-					return
-				}
-				fight.spevent.opponentselect=cardSlot[1]
-				return
-			}
-			if(cardRarity>0) {
-				if(fight.spevent.topic>=4) {
-					for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===5 && fight.spevent.topic===5) {
-						fight.spevent.opponentselect=cardSlot[i]
-						return
-					}
-					for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===4) {
-						fight.spevent.opponentselect=cardSlot[i]
-						return
-					}
-					for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===5) {
-						fight.spevent.opponentselect=cardSlot[i]
-						return
-					}
-					for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id>=6) {
-						fight.spevent.opponentselect=cardSlot[i]
-						return
-					}
-					let typeCount=new Array(9).fill(0)
-					for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id<=4) typeCount[fight.spevent.opponentcard[cardSlot[i]].id]++
-					for(let i=1;i<=7;i++) for(let j=1;j<=6;j++) if(typeCount[fight.spevent.opponentcard[cardSlot[j]].id]>=2 && fight.spevent.opponentcard[cardSlot[j]].rarity+fight.spevent.opponentcard[cardSlot[j]].level===i) {
-						fight.spevent.opponentselect=cardSlot[j]
-						return
-					}
-					fight.spevent.opponentselect=cardSlot[1]
-					return
-				}
-				let functionalCount=0
-				for(let i=1;i<=6;i++) {
-					if(fight.spevent.opponentcard[cardSlot[i]].id>=6) functionalCount++
-					if(fight.spevent.opponentcard[cardSlot[i]].id===8) functionalCount+=9
-				}
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===8 && functionalCount%10===0) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===6) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===7 && functionalCount>=2) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				let maxStat=1,maxSlot=0
-				for(let i=1;i<=6;i++) {
-					let newStat
-					if(fight.spevent.topic===1) newStat=fight.spevent.opponentcard[cardSlot[i]].health
-					if(fight.spevent.topic===2) newStat=fight.spevent.opponentcard[cardSlot[i]].damage
-					if(fight.spevent.topic===3) newStat=fight.spevent.opponentcard[cardSlot[i]].dpt
-					if(newStat>maxStat) {
-						maxStat=newStat
-						maxSlot=cardSlot[i]
-					}
-				}
-				if(maxSlot!==0) {
-					fight.spevent.opponentselect=maxSlot
-					return
-				}
-				fight.spevent.opponentselect=cardSlot[1]
-				return
-			}
-			if(fight.spevent.topic>=4) {
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===5 && fight.spevent.topic===5) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				let functionalCount=0
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id>=6) functionalCount++
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===4 && functionalCount<=2) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id>=6) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===5) {
-					fight.spevent.opponentselect=cardSlot[i]
-					return
-				}
-				let typeCount=new Array(9).fill(0)
-				for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id<=4) typeCount[fight.spevent.opponentcard[cardSlot[i]].id]++
-				for(let i=1;i<=7;i++) for(let j=1;j<=6;j++) if(typeCount[fight.spevent.opponentcard[cardSlot[j]].id]>=2 && fight.spevent.opponentcard[cardSlot[j]].rarity+fight.spevent.opponentcard[cardSlot[j]].level===i) {
-					fight.spevent.opponentselect=cardSlot[j]
-					return
-				}
-				fight.spevent.opponentselect=cardSlot[1]
-				return
-			}
-			let functionalCount=0
-			for(let i=1;i<=6;i++) {
-				if(fight.spevent.opponentcard[cardSlot[i]].id>=6) functionalCount++
-				if(fight.spevent.opponentcard[cardSlot[i]].id===8) functionalCount+=9
-			}
-			for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===8 && functionalCount%10===0) {
-				fight.spevent.opponentselect=cardSlot[i]
-				return
-			}
-			for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===7 && functionalCount>=3) {
-				fight.spevent.opponentselect=cardSlot[i]
-				return
-			}
-			for(let i=1;i<=6;i++) if(fight.spevent.opponentcard[cardSlot[i]].id===6 && functionalCount>=3) {
-				fight.spevent.opponentselect=cardSlot[i]
-				return
-			}
-			let maxStat=1,maxSlot=0
-			for(let i=1;i<=6;i++) {
-				let newStat
-				if(fight.spevent.topic===1) newStat=fight.spevent.opponentcard[cardSlot[i]].health
-				if(fight.spevent.topic===2) newStat=fight.spevent.opponentcard[cardSlot[i]].damage
-				if(fight.spevent.topic===3) newStat=fight.spevent.opponentcard[cardSlot[i]].dpt
-				if(newStat>maxStat) {
-					maxStat=newStat
-					maxSlot=cardSlot[i]
-				}
-			}
-			if(maxSlot!==0) {
-				fight.spevent.opponentselect=maxSlot
-				return
-			}
-			fight.spevent.opponentselect=cardSlot[1]
-			return
-		}
-		async function playCard(playerchoice) {
-			if(animation) return
-			animation=true
-			fight.spevent.travelerselect=playerchoice
-			getGrid(0,fight.spevent.travelerselect,6).replaceWith(createGrid(0,fight.spevent.travelerselect,6,"Empty",1,0))
-			fight.spevent.travelercard[fight.spevent.travelerselect].print(5,4)
-			selectedGrid.select=false
-			closeGridInfo(true)
-			if(fight.spevent.turn==="Traveler") {
-				opponentChoice(fight.spevent.travelercard[fight.spevent.travelerselect].rarity)
-				getGrid(0,fight.spevent.opponentselect,1).replaceWith(createGrid(0,fight.spevent.opponentselect,1,"Empty",1,0))
-			}
-			fight.spevent.opponentcard[fight.spevent.opponentselect].print(4,3,true)
-			await compareCard(fight.spevent.topic,fight.spevent.travelercard[fight.spevent.travelerselect],fight.spevent.opponentcard[fight.spevent.opponentselect])
-			getGrid(0,4,3).replaceWith(createGrid(0,4,3,"Empty",1,0))
-			getGrid(0,5,3).replaceWith(createGrid(0,5,3,"Empty",1,0))
-			getGrid(0,4,4).replaceWith(createGrid(0,4,4,"Empty",1,0))
-			getGrid(0,5,4).replaceWith(createGrid(0,5,4,"Empty",1,0))
-			if(fight.spevent.travelermomentum<=0) {
-				await delay(1000)
-				animation=false
-				endFight()
-				return
-			}
-			if(fight.spevent.opponentmomentum<=0) {
-				await delay(1000)
-				animation=false
-				endFight(true)
-				return
-			}
-			fight.spevent.travelercard[fight.spevent.travelerselect]=new Card("Traveler")
-			fight.spevent.travelercard[fight.spevent.travelerselect].print(fight.spevent.travelerselect,6)
-			fight.spevent.opponentcard[fight.spevent.opponentselect]=new Card(fight.spevent.event-100)
-			fight.spevent.opponentcard[fight.spevent.opponentselect].print(fight.spevent.opponentselect,1)
-			fight.spevent.topic=roll(1,4)
-			if(fight.spevent.topic===4 && determine(20)) fight.spevent.topic=5
-			printTopic(fight.spevent.topic)
-			if(fight.spevent.turn==="Opponent") {
-				opponentChoice(0)
-				getGrid(0,fight.spevent.opponentselect,1).replaceWith(createGrid(0,fight.spevent.opponentselect,1,"Empty",1,0))
-				fight.spevent.opponentcard[fight.spevent.opponentselect].print(4,3)
-			}
-			animation=false
-		}
-	</script>
-	<script>
-		const perfectGame="The game is perfect, there are no bugs"
+		const perfectGame="The game is perfect, there are no encodeFile() and decodeFile() s."
 		console.log(perfectGame)
 	</script>
 </head>
@@ -11791,7 +9452,7 @@
 	<div id="gallery" class="mid lyellow-bg box highz hsize nd"></div>
 	<div class="cmargin text3-c">
 		<button type="button" tabindex="-1" onclick="importSave()" class="lmargin lblue-bg recbtn pointer" title="Import Save">Retrieve Memories</button>
-		<button type="button" tabindex="-1" onclick="hardReset()" class="lmargin lred-bg recbtn forbidden" title="HARD RESET">Restart the Universe</button>
+		<button type="button" tabindex="-1" onclick="prestige()" class="lmargin lred-bg recbtn forbidden" title="HARD RESET">Restart the Universe</button>
 		<button type="button" tabindex="-1" id="export-btn" onclick="exportSave()" class="lmargin lyellow-bg recbtn pointer" title="Export Save">Store Memories</button>
 	</div>
 	<div id="calendar" class="cmargin text2-c nd">
@@ -11879,7 +9540,6 @@
 	</div>
 	<div id="mapinfo" class="llcyan-bg mid infobox nd"></div>
 	<div id="gridinfo" class="llpurple-bg mid infobox highestz nd"></div>
-	<div id="central-room" class="mid lhsize border nd"></div>
 	<div id="dialog" class="mid infobox text3-c shwidth nd" onclick="dialog('Skip',6361)">
 		<h3 id="dialog-title">Title</h3>
 		<span id="dialog-maintext"></span>
@@ -11921,23 +9581,14 @@
 	<div id="version2">
 		<h2>Announcement</h2>
 		<span>This game was updated again when you left!</span>
-		<span>Do you want to perform a <span class="bold">hard reset</span> before starting the game?</span>
+		<span>Do you want to perform a <span class="bold">prestige</span> before starting the game?</span>
 		<br>
-		<span>The last update was on 2026/3/27,</span>
-		<span>which fixed a bug with Pearl.</span>
-		<br>
-		<span>The last update before was on 2026/3/26,</span>
-		<span>which completed Floor 1 content.</span>
-		<br>
-		<span>The last important update before was on 2026/1/22,</span>
-		<span>which updated Floor 1.</span>
-		<span>Fixed some bugs. Small rebalancing (shootable petals mostly).</span>
-		<span>Some special event, floor ending, talent is still not available.</span>
-		<span>Keyboard control is implemented at 2026/2/5.</span>
+		<span>The last update was BAD,</span>
+		<span>I recommend you stop playing.</span>
 		<br>
 		<button type="button" tabindex="-1" id="version3" onclick="updateVersion(false)">No, just update the version.</button>
 		<br>
-		<button type="button" tabindex="-1" id="version4" onclick="updateVersion(true)">Yes, hard reset before starting.</button>
+		<button type="button" tabindex="-1" id="version4" onclick="updateVersion(true)">Yes, prestige before starting.</button>
 	</div>
 	<div id="endgame1"></div>
 	<div id="endgame2"></div>
