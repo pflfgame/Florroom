@@ -1518,17 +1518,22 @@
 			}
 			return answer
 		}
-		function ShinyMobLootBuff() {
-			let base=[[35,15,4,1],[23,6,2,0],[10,3,1,0]]
+		function ShinyMobLootBuff(rarity) {
+			let rarityBase=[0,30,25,20,15,10,0],levelBase=[0,40,34,28,22,16,10]
 			let seed=roll(1,100),answer=new Object()
-			for(let i=0;i<=2;i++) {
-				for(let j=0;j<=3;j++) if(seed>0) {
-					seed-=base[i][j]
-					if(seed<=0) {
-						answer.rarity=i
-						answer.level=j
-					}
+			if(determine(rarityBase[rarity])) {
+				answer.rarity=1
+			} else {
+				answer.rarity=0
+			}
+			if(determine(levelBase[rarity+answer.rarity])) {
+				if(determine(levelBase[rarity+answer.rarity]/2)) {
+					answer.level=2
+				} else {
+					answer.level=1
 				}
+			} else {
+				answer.level=0
 			}
 			return answer
 		}
@@ -2683,7 +2688,7 @@
 				let pendingID=PetalNameList.indexOf(MobLootList[this.id][i].slice(0,-2)),pendingRarity=MobLoot(this.rarity,parseInt(MobLootList[this.id][i].slice(-1))),pendingLevel=0
 				if(pendingRarity<PetalLowestRarityList[pendingID]) continue
 				if(this.shiny) {
-					let lootBuff=ShinyMobLootBuff()
+					let lootBuff=ShinyMobLootBuff(pendingRarity)
 					pendingRarity+=lootBuff.rarity
 					if(pendingRarity>6) pendingRarity=6
 					pendingLevel+=lootBuff.level
@@ -5862,7 +5867,7 @@
 			mouseX=mouse.clientX
 			mouseY=mouse.clientY
 		} )
-		const version=20260517,acceptedVersion=20260210
+		const version=20260518,acceptedVersion=20260210
 		const svgNS="http://www.w3.org/2000/svg"
 		const dx=[0,0,1,0,-1],dy=[0,-1,0,1,0],dx5=[0,1,2,2,1,-1,-2,-2,-1],dy5=[0,-2,-1,1,2,2,1,-1,-2]
 		let rarityColor=["#000000","#7eef6d","#ffe65d","#4d52e3","#861fde","#de1f1f","#1fdbde","#ff2b75","#2bffa3","#555555"]
@@ -13136,9 +13141,10 @@
 				}
 				if(stageScore===100) {
 					if(fight.spevent.stage===0) {
-						addLog("[Resource] You received 1 Refining Crystal, 1 Mana Orb and 1 Book of Confidence.","#7fff7f")
+						addLog("[Resource] You received 1 Refining Crystal, 1 Mana Orb, 1 set of Manufacturing Tools and 1 Book of Confidence.","#7fff7f")
 						player.item.add("Refining Crystal",1)
 						player.item.add("Mana Orb",1)
+						player.item.add("Manufacturing Tools",1)
 						player.item.add("Book of Confidence",1)
 						setPlayer()
 					} else {
@@ -13422,12 +13428,12 @@
 		<span>This game was updated again when you left!</span>
 		<span>Do you want to perform a <span class="bold">hard reset</span> before starting the game?</span>
 		<br>
-		<span>The last update was on 2026/5/17,</span>
+		<span>The last update was on 2026/5/18,</span>
+		<span>which nerfed shiny mob loot buff.</span>
+		<br>
+		<span>The last update before was on 2026/5/17,</span>
 		<span>which updated Floor 2.</span>
 		<span>It's not complete so jungle is not available.</span>
-		<br>
-		<span>The last update before was on 2026/3/27,</span>
-		<span>which fixed a bug with Pearl.</span>
 		<br>
 		<span>The last important update before was on 2026/3/26,</span>
 		<span>which completed Floor 1 content.</span>
