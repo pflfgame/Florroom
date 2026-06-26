@@ -12640,7 +12640,7 @@
 			let resultingHealing=healing
 			if(fight.flower.effect.hasOwnProperty("purity")) resultingHealing+=approx(resultingHealing*fight.flower.effect.purity.buff/100)
 			if(fight.flower.effect.hasOwnProperty("suppression") && petalName!=="Epic Rose Juice") resultingHealing-=approx(resultingHealing*fight.flower.effect.suppression.debuff)
-			addLog("[Flower] "+translateText("Flower")+translateText(" received ")+translateText(petalName,"CH")+translateText("造成的","CH")+resultingDamage+translateText("治疗","CH")+translateText(" healing from ","EN")+translateText(petalName,"EN")+translateText("."),"#00bfbf")
+			addLog("[Flower] "+translateText("Flower")+translateText(" received ")+translateText(petalName,"CH")+translateText("造成的","CH")+resultingHealing+translateText("治疗","CH")+translateText(" healing from ","EN")+translateText(petalName,"EN")+translateText("."),"#00bfbf")
 			fight.flower.currenthealth+=resultingHealing
 			if(fight.flower.currenthealth>fight.flower.health) {
 				let overheal=fight.flower.currenthealth-fight.flower.health
